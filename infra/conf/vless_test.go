@@ -3,13 +3,13 @@ package conf_test
 import (
 	"testing"
 
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/protocol"
-	"github.com/xtls/xray-core/common/serial"
-	. "github.com/xtls/xray-core/infra/conf"
-	"github.com/xtls/xray-core/proxy/vless"
-	"github.com/xtls/xray-core/proxy/vless/inbound"
-	"github.com/xtls/xray-core/proxy/vless/outbound"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/serial"
+	. "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/infra/conf"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vless"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vless/inbound"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vless/outbound"
 )
 
 func TestVLessOutbound(t *testing.T) {
@@ -35,49 +35,24 @@ func TestVLessOutbound(t *testing.T) {
 			}`,
 			Parser: loadJSON(creator),
 			Output: &outbound.Config{
-				Vnext: &protocol.ServerEndpoint{
-					Address: &net.IPOrDomain{
-						Address: &net.IPOrDomain_Domain{
-							Domain: "example.com",
+				Vnext: []*protocol.ServerEndpoint{
+					{
+						Address: &net.IPOrDomain{
+							Address: &net.IPOrDomain_Domain{
+								Domain: "example.com",
+							},
 						},
-					},
-					Port: 443,
-					User: &protocol.User{
-						Account: serial.ToTypedMessage(&vless.Account{
-							Id:         "27848739-7e62-4138-9fd3-098a63964b6b",
-							Flow:       "xtls-rprx-vision-udp443",
-							Encryption: "none",
-						}),
-						Level: 0,
-					},
-				},
-			},
-		},
-		{
-			Input: `{
-				"address": "example.com",
-				"port": 443,
-				"id": "27848739-7e62-4138-9fd3-098a63964b6b",
-				"flow": "xtls-rprx-vision-udp443",
-				"encryption": "none",
-				"level": 0
-			}`,
-			Parser: loadJSON(creator),
-			Output: &outbound.Config{
-				Vnext: &protocol.ServerEndpoint{
-					Address: &net.IPOrDomain{
-						Address: &net.IPOrDomain_Domain{
-							Domain: "example.com",
+						Port: 443,
+						User: []*protocol.User{
+							{
+								Account: serial.ToTypedMessage(&vless.Account{
+									Id:         "27848739-7e62-4138-9fd3-098a63964b6b",
+									Flow:       "xtls-rprx-vision-udp443",
+									Encryption: "none",
+								}),
+								Level: 0,
+							},
 						},
-					},
-					Port: 443,
-					User: &protocol.User{
-						Account: serial.ToTypedMessage(&vless.Account{
-							Id:         "27848739-7e62-4138-9fd3-098a63964b6b",
-							Flow:       "xtls-rprx-vision-udp443",
-							Encryption: "none",
-						}),
-						Level: 0,
 					},
 				},
 			},

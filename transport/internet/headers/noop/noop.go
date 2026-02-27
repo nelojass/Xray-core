@@ -4,7 +4,7 @@ import (
 	"context"
 	"net"
 
-	"github.com/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
 )
 
 type NoOpHeader struct{}

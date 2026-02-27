@@ -3,9 +3,9 @@ package dns
 import (
 	"context"
 
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/features/dns"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/dns"
 )
 
 type FakeDNSServer struct {
@@ -18,11 +18,6 @@ func NewFakeDNSServer(fd dns.FakeDNSEngine) *FakeDNSServer {
 
 func (FakeDNSServer) Name() string {
 	return "FakeDNS"
-}
-
-// IsDisableCache implements Server.
-func (s *FakeDNSServer) IsDisableCache() bool {
-	return true
 }
 
 func (f *FakeDNSServer) QueryIP(ctx context.Context, domain string, opt dns.IPOption) ([]net.IP, uint32, error) {

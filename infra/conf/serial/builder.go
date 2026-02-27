@@ -4,11 +4,11 @@ import (
 	"context"
 	"io"
 
-	"github.com/xtls/xray-core/common/errors"
-	creflect "github.com/xtls/xray-core/common/reflect"
-	"github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/infra/conf"
-	"github.com/xtls/xray-core/main/confloader"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	creflect "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/reflect"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/infra/conf"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/main/confloader"
 )
 
 func MergeConfigFromFiles(files []*core.ConfigSource) (string, error) {

@@ -14,16 +14,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/xtls/xray-core/app/dispatcher"
-	"github.com/xtls/xray-core/app/proxyman"
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/log"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/retry"
-	"github.com/xtls/xray-core/common/serial"
-	"github.com/xtls/xray-core/common/units"
-	core "github.com/xtls/xray-core/core"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/dispatcher"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/proxyman"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/log"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/retry"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/serial"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/units"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -213,40 +213,27 @@ func testTCPConn2(conn net.Conn, payloadSize int, timeout time.Duration) func() 
 				"\tSys =", units.ByteSize(m.Sys).String(),
 				"\tNumGC =", m.NumGC)
 		}()
-		singleWrite := func(length int) error {
-			payload := make([]byte, length)
-			common.Must2(rand.Read(payload))
+		payload := make([]byte, payloadSize)
+		common.Must2(rand.Read(payload))
 
-			nBytes, err := conn.Write(payload)
-			if err != nil {
-				return err
-			}
-			if nBytes != len(payload) {
-				return errors.New("expect ", len(payload), " written, but actually ", nBytes)
-			}
-
-			response, err := readFrom2(conn, timeout, length)
-			if err != nil {
-				return err
-			}
-			_ = response
-
-			if r := bytes.Compare(response, xor(payload)); r != 0 {
-				return errors.New(r)
-			}
-
-			return nil
+		nBytes, err := conn.Write(payload)
+		if err != nil {
+			return err
 		}
-		for payloadSize > 0 {
-			sizeToWrite := 1024
-			if payloadSize < 1024 {
-				sizeToWrite = payloadSize
-			}
-			if err := singleWrite(sizeToWrite); err != nil {
-				return err
-			}
-			payloadSize -= sizeToWrite
+		if nBytes != len(payload) {
+			return errors.New("expect ", len(payload), " written, but actually ", nBytes)
 		}
+
+		response, err := readFrom2(conn, timeout, payloadSize)
+		if err != nil {
+			return err
+		}
+		_ = response
+
+		if r := bytes.Compare(response, xor(payload)); r != 0 {
+			return errors.New(r)
+		}
+
 		return nil
 	}
 }

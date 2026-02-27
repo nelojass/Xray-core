@@ -7,13 +7,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/buf"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/protocol"
-	"github.com/xtls/xray-core/common/signal/done"
-	"github.com/xtls/xray-core/transport/pipe"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/buf"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/pipe"
 )
 
 type SessionManager struct {
@@ -66,7 +65,6 @@ func (m *SessionManager) Allocate(Strategy *ClientStrategy) *Session {
 	s := &Session{
 		ID:     m.count,
 		parent: m,
-		done:   done.New(),
 	}
 	m.sessions[s.ID] = s
 	return s
@@ -117,7 +115,7 @@ func (m *SessionManager) Get(id uint16) (*Session, bool) {
 	return s, found
 }
 
-func (m *SessionManager) CloseIfNoSessionAndIdle(checkSize int, checkCount int) bool {
+func (m *SessionManager) CloseIfNoSession() bool {
 	m.Lock()
 	defer m.Unlock()
 
@@ -125,13 +123,11 @@ func (m *SessionManager) CloseIfNoSessionAndIdle(checkSize int, checkCount int) 
 		return true
 	}
 
-	if len(m.sessions) != 0 || checkSize != 0 || checkCount != int(m.count) {
+	if len(m.sessions) != 0 {
 		return false
 	}
 
 	m.closed = true
-
-	m.sessions = nil
 	return true
 }
 
@@ -161,7 +157,6 @@ type Session struct {
 	ID           uint16
 	transferType protocol.TransferType
 	closed       bool
-	done         *done.Instance
 	XUDP         *XUDP
 }
 
@@ -176,9 +171,6 @@ func (s *Session) Close(locked bool) error {
 		return nil
 	}
 	s.closed = true
-	if s.done != nil {
-		s.done.Close()
-	}
 	if s.XUDP == nil {
 		common.Interrupt(s.input)
 		common.Close(s.output)

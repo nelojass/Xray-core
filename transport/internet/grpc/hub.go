@@ -4,14 +4,14 @@ import (
 	"context"
 	"time"
 
-	goreality "github.com/xtls/reality"
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/transport/internet"
-	"github.com/xtls/xray-core/transport/internet/grpc/encoding"
-	"github.com/xtls/xray-core/transport/internet/reality"
-	"github.com/xtls/xray-core/transport/internet/tls"
+	goreality "v12w.x34y.com/flyfishLib/forkHub/xtls/reality"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/grpc/encoding"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/reality"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/tls"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
@@ -19,12 +19,12 @@ import (
 
 type Listener struct {
 	encoding.UnimplementedGRPCServiceServer
-	ctx     context.Context
-	handler internet.ConnHandler
-	local   net.Addr
-	config  *Config
+	ctx	context.Context
+	handler	internet.ConnHandler
+	local	net.Addr
+	config	*Config
 
-	s *grpc.Server
+	s	*grpc.Server
 }
 
 func (l Listener) Tun(server encoding.GRPCService_TunServer) error {
@@ -53,23 +53,23 @@ func (l Listener) Addr() net.Addr {
 func Listen(ctx context.Context, address net.Address, port net.Port, settings *internet.MemoryStreamConfig, handler internet.ConnHandler) (internet.Listener, error) {
 	grpcSettings := settings.ProtocolSettings.(*Config)
 	var listener *Listener
-	if port == net.Port(0) { // unix
+	if port == net.Port(0) {	// unix
 		listener = &Listener{
-			handler: handler,
+			handler:	handler,
 			local: &net.UnixAddr{
-				Name: address.Domain(),
-				Net:  "unix",
+				Name:	address.Domain(),
+				Net:	"unix",
 			},
-			config: grpcSettings,
+			config:	grpcSettings,
 		}
-	} else { // tcp
+	} else {	// tcp
 		listener = &Listener{
-			handler: handler,
+			handler:	handler,
 			local: &net.TCPAddr{
-				IP:   address.IP(),
-				Port: int(port),
+				IP:	address.IP(),
+				Port:	int(port),
 			},
-			config: grpcSettings,
+			config:	grpcSettings,
 		}
 	}
 
@@ -85,8 +85,8 @@ func Listen(ctx context.Context, address net.Address, port net.Port, settings *i
 	}
 	if grpcSettings.IdleTimeout > 0 || grpcSettings.HealthCheckTimeout > 0 {
 		options = append(options, grpc.KeepaliveParams(keepalive.ServerParameters{
-			Time:    time.Second * time.Duration(grpcSettings.IdleTimeout),
-			Timeout: time.Second * time.Duration(grpcSettings.HealthCheckTimeout),
+			Time:		time.Second * time.Duration(grpcSettings.IdleTimeout),
+			Timeout:	time.Second * time.Duration(grpcSettings.HealthCheckTimeout),
 		}))
 	}
 
@@ -100,19 +100,19 @@ func Listen(ctx context.Context, address net.Address, port net.Port, settings *i
 	go func() {
 		var streamListener net.Listener
 		var err error
-		if port == net.Port(0) { // unix
+		if port == net.Port(0) {	// unix
 			streamListener, err = internet.ListenSystem(ctx, &net.UnixAddr{
-				Name: address.Domain(),
-				Net:  "unix",
+				Name:	address.Domain(),
+				Net:	"unix",
 			}, settings.SocketSettings)
 			if err != nil {
 				errors.LogErrorInner(ctx, err, "failed to listen on ", address)
 				return
 			}
-		} else { // tcp
+		} else {	// tcp
 			streamListener, err = internet.ListenSystem(ctx, &net.TCPAddr{
-				IP:   address.IP(),
-				Port: int(port),
+				IP:	address.IP(),
+				Port:	int(port),
 			}, settings.SocketSettings)
 			if err != nil {
 				errors.LogErrorInner(ctx, err, "failed to listen on ", address, ":", port)

@@ -8,7 +8,7 @@ message Hunk {
 }
 
 message MultiHunk {
-   repeated bytes data = 1;
+  repeated bytes data = 1;
 }
 
 service GRPCService {

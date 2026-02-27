@@ -3,29 +3,31 @@ package freedom
 import (
 	"context"
 	"crypto/rand"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/dispatcher"
 	"io"
+	"strconv"
 	"time"
 
 	"github.com/pires/go-proxyproto"
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/buf"
-	"github.com/xtls/xray-core/common/crypto"
-	"github.com/xtls/xray-core/common/dice"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/platform"
-	"github.com/xtls/xray-core/common/retry"
-	"github.com/xtls/xray-core/common/session"
-	"github.com/xtls/xray-core/common/signal"
-	"github.com/xtls/xray-core/common/task"
-	"github.com/xtls/xray-core/common/utils"
-	"github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/features/policy"
-	"github.com/xtls/xray-core/features/stats"
-	"github.com/xtls/xray-core/proxy"
-	"github.com/xtls/xray-core/transport"
-	"github.com/xtls/xray-core/transport/internet"
-	"github.com/xtls/xray-core/transport/internet/stat"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/buf"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/crypto"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/dice"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/platform"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/retry"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/session"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/signal"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/task"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/utils"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/policy"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/stats"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/stat"
 )
 
 var useSplice bool
@@ -33,8 +35,8 @@ var useSplice bool
 func init() {
 	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
 		h := new(Handler)
-		if err := core.RequireFeatures(ctx, func(pm policy.Manager) error {
-			return h.Init(config.(*Config), pm)
+		if err := core.RequireFeatures(ctx, func(pm policy.Manager, s stats.Manager) error {
+			return h.Init(config.(*Config), pm, s)
 		}); err != nil {
 			return nil, err
 		}
@@ -51,13 +53,16 @@ func init() {
 // Handler handles Freedom connections.
 type Handler struct {
 	policyManager policy.Manager
+	statManager   stats.Manager
 	config        *Config
 }
 
 // Init initializes the Handler with necessary parameters.
-func (h *Handler) Init(config *Config, pm policy.Manager) error {
+func (h *Handler) Init(config *Config, pm policy.Manager, s stats.Manager) error {
 	h.config = config
 	h.policyManager = pm
+	h.statManager = s
+
 	return nil
 }
 
@@ -103,6 +108,22 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 		if server.Port != 0 {
 			destination.Port = net.Port(server.Port)
 			UDPOverride.Port = destination.Port
+		}
+	}
+
+	//todo:add freedom down link traffic counter.
+	clientId := session.ClientIdFromContext(ctx)
+	if sizeStatWriter, ok := link.Writer.(*dispatcher.SizeStatWriter); ok {
+		name := "user>>>" + strconv.FormatUint(clientId, 10) + ">>>traffic>>>downlink"
+		if c, _ := stats.GetOrRegisterCounter(h.statManager, name); c != nil {
+			sizeStatWriter.Counter = c
+		}
+	} else if buWriter, ok := link.Writer.(*buf.EndpointOverrideWriter); ok {
+		name := "user>>>" + strconv.FormatUint(clientId, 10) + ">>>traffic>>>downlink"
+		if c, _ := stats.GetOrRegisterCounter(h.statManager, name); c != nil {
+			if statWriter, ok := buWriter.Writer.(*dispatcher.SizeStatWriter); ok {
+				statWriter.Counter = c
+			}
 		}
 	}
 

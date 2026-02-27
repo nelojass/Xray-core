@@ -2,21 +2,20 @@ package grpc
 
 import (
 	"context"
-	"reflect"
+	gonet "net"
 	"sync"
 	"time"
 
-	"github.com/xtls/xray-core/common"
-	c "github.com/xtls/xray-core/common/ctx"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/session"
-	"github.com/xtls/xray-core/common/utils"
-	"github.com/xtls/xray-core/transport/internet"
-	"github.com/xtls/xray-core/transport/internet/grpc/encoding"
-	"github.com/xtls/xray-core/transport/internet/reality"
-	"github.com/xtls/xray-core/transport/internet/stat"
-	"github.com/xtls/xray-core/transport/internet/tls"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	c "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/ctx"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/session"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/grpc/encoding"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/reality"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/stat"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/tls"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/connectivity"
@@ -100,7 +99,7 @@ func getGrpcClient(ctx context.Context, dest net.Destination, streamSettings *in
 			},
 			MinConnectTimeout: 5 * time.Second,
 		}),
-		grpc.WithContextDialer(func(gctx context.Context, s string) (net.Conn, error) {
+		grpc.WithContextDialer(func(gctx context.Context, s string) (gonet.Conn, error) {
 			select {
 			case <-gctx.Done():
 				return nil, gctx.Err()
@@ -169,6 +168,10 @@ func getGrpcClient(ctx context.Context, dest net.Destination, streamSettings *in
 		dialOptions = append(dialOptions, grpc.WithInitialWindowSize(grpcSettings.InitialWindowsSize))
 	}
 
+	if grpcSettings.UserAgent != "" {
+		dialOptions = append(dialOptions, grpc.WithUserAgent(grpcSettings.UserAgent))
+	}
+
 	var grpcDestHost string
 	if dest.Address.Family().IsDomain() {
 		grpcDestHost = dest.Address.Domain()
@@ -176,26 +179,10 @@ func getGrpcClient(ctx context.Context, dest net.Destination, streamSettings *in
 		grpcDestHost = dest.Address.IP().String()
 	}
 
-	conn, err := grpc.NewClient(
-		"passthrough:///"+net.JoinHostPort(grpcDestHost, dest.Port.String()),
+	conn, err := grpc.Dial(
+		gonet.JoinHostPort(grpcDestHost, dest.Port.String()),
 		dialOptions...,
 	)
-	if err == nil {
-		userAgent := grpcSettings.UserAgent
-		if userAgent == "" {
-			userAgent = utils.ChromeUA
-		}
-		setUserAgent(conn, userAgent)
-		conn.Connect()
-	}
 	globalDialerMap[dialerConf{dest, streamSettings}] = conn
 	return conn, err
-}
-
-// setUserAgent overrides the user-agent on a ClientConn to remove the
-// "grpc-go/version" suffix that grpc.WithUserAgent unconditionally appends.
-func setUserAgent(conn *grpc.ClientConn, ua string) {
-	if f := reflect.ValueOf(conn).Elem().FieldByName("dopts").FieldByName("copts").FieldByName("UserAgent"); f.IsValid() {
-		*(*string)(f.Addr().UnsafePointer()) = ua
-	}
 }

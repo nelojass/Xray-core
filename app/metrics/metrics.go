@@ -7,16 +7,16 @@ import (
 	_ "net/http/pprof"
 	"strings"
 
-	"github.com/xtls/xray-core/app/observatory"
-	"github.com/xtls/xray-core/app/stats"
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/signal/done"
-	"github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/features/extension"
-	"github.com/xtls/xray-core/features/outbound"
-	feature_stats "github.com/xtls/xray-core/features/stats"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/observatory"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/stats"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/signal/done"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/extension"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/outbound"
+	feature_stats "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/stats"
 )
 
 type MetricsHandler struct {

@@ -6,11 +6,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/xtls/xray-core/app/proxyman"
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/features/outbound"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/proxyman"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/outbound"
 )
 
 // Manager is to manage all outbound handlers.
@@ -192,7 +191,6 @@ func init() {
 	common.Must(common.RegisterConfig((*proxyman.OutboundConfig)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
 		return New(ctx, config.(*proxyman.OutboundConfig))
 	}))
-	common.Must(common.RegisterConfig((*core.OutboundHandlerConfig)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
-		return NewHandler(ctx, config.(*core.OutboundHandlerConfig))
-	}))
+
+	//todo:将NewHandler的注册放到forward中，防止依赖倒置
 }

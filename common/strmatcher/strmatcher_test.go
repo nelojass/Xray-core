@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/xtls/xray-core/common"
-	. "github.com/xtls/xray-core/common/strmatcher"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	. "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/strmatcher"
 )
 
 func TestMatcherGroup(t *testing.T) {

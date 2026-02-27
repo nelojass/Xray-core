@@ -3,7 +3,7 @@ package json
 import (
 	"io"
 
-	"github.com/xtls/xray-core/common/buf"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/buf"
 )
 
 // State is the internal state of parser.

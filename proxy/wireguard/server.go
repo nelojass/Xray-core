@@ -5,20 +5,20 @@ import (
 	goerrors "errors"
 	"io"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/buf"
-	c "github.com/xtls/xray-core/common/ctx"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/log"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/session"
-	"github.com/xtls/xray-core/common/signal"
-	"github.com/xtls/xray-core/common/task"
-	"github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/features/dns"
-	"github.com/xtls/xray-core/features/policy"
-	"github.com/xtls/xray-core/features/routing"
-	"github.com/xtls/xray-core/transport/internet/stat"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/buf"
+	c "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/ctx"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/log"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/session"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/signal"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/task"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/dns"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/policy"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/routing"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/stat"
 )
 
 var nullDestination = net.TCPDestination(net.AnyIP, 0)
@@ -31,10 +31,10 @@ type Server struct {
 }
 
 type routingInfo struct {
-	ctx         context.Context
-	dispatcher  routing.Dispatcher
-	inboundTag  *session.Inbound
-	contentTag  *session.Content
+	ctx        context.Context
+	dispatcher routing.Dispatcher
+	inboundTag *session.Inbound
+	contentTag *session.Content
 }
 
 func NewServer(ctx context.Context, conf *DeviceConfig) (*Server, error) {

@@ -8,17 +8,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/xtls/xray-core/app/policy"
-	"github.com/xtls/xray-core/app/proxyman"
-	. "github.com/xtls/xray-core/app/proxyman/outbound"
-	"github.com/xtls/xray-core/app/stats"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/serial"
-	"github.com/xtls/xray-core/common/session"
-	core "github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/features/outbound"
-	"github.com/xtls/xray-core/proxy/freedom"
-	"github.com/xtls/xray-core/transport/internet/stat"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/policy"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/proxyman"
+	. "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/proxyman/outbound"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/stats"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/serial"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/session"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/outbound"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/freedom"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/stat"
 )
 
 func TestInterfaces(t *testing.T) {

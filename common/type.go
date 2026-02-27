@@ -4,7 +4,7 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
 )
 
 // ConfigCreator is a function to create an object by a config.

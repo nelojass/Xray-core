@@ -4,41 +4,45 @@ import (
 	"context"
 	"time"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/buf"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/protocol"
-	"github.com/xtls/xray-core/common/retry"
-	"github.com/xtls/xray-core/common/session"
-	"github.com/xtls/xray-core/common/signal"
-	"github.com/xtls/xray-core/common/task"
-	core "github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/features/policy"
-	"github.com/xtls/xray-core/transport"
-	"github.com/xtls/xray-core/transport/internet"
-	"github.com/xtls/xray-core/transport/internet/stat"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/buf"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/retry"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/session"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/signal"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/task"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/policy"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/stat"
 )
 
 // Client is a inbound handler for trojan protocol
 type Client struct {
-	server        *protocol.ServerSpec
+	serverPicker  protocol.ServerPicker
 	policyManager policy.Manager
 }
 
 // NewClient create a new trojan client.
 func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
-	if config.Server == nil {
-		return nil, errors.New(`no target server found`)
+	serverList := protocol.NewServerList()
+	for _, rec := range config.Server {
+		s, err := protocol.NewServerSpecFromPB(rec)
+		if err != nil {
+			return nil, errors.New("failed to parse server spec").Base(err)
+		}
+		serverList.AddServer(s)
 	}
-	server, err := protocol.NewServerSpecFromPB(config.Server)
-	if err != nil {
-		return nil, errors.New("failed to get server spec").Base(err)
+	if serverList.Size() == 0 {
+		return nil, errors.New("0 server")
 	}
 
 	v := core.MustFromContext(ctx)
 	client := &Client{
-		server:        server,
+		serverPicker:  protocol.NewRoundRobinServerPicker(serverList),
 		policyManager: v.GetFeature(policy.ManagerType()).(policy.Manager),
 	}
 	return client, nil
@@ -56,11 +60,12 @@ func (c *Client) Process(ctx context.Context, link *transport.Link, dialer inter
 	destination := ob.Target
 	network := destination.Network
 
-	server := c.server
+	var server *protocol.ServerSpec
 	var conn stat.Connection
 
 	err := retry.ExponentialBackoff(5, 100).On(func() error {
-		rawConn, err := dialer.Dial(ctx, server.Destination)
+		server = c.serverPicker.PickServer()
+		rawConn, err := dialer.Dial(ctx, server.Destination())
 		if err != nil {
 			return err
 		}
@@ -71,11 +76,11 @@ func (c *Client) Process(ctx context.Context, link *transport.Link, dialer inter
 	if err != nil {
 		return errors.New("failed to find an available destination").AtWarning().Base(err)
 	}
-	errors.LogInfo(ctx, "tunneling request to ", destination, " via ", server.Destination.NetAddr())
+	errors.LogInfo(ctx, "tunneling request to ", destination, " via ", server.Destination().NetAddr())
 
 	defer conn.Close()
 
-	user := server.User
+	user := server.PickUser()
 	account, ok := user.Account.(*MemoryAccount)
 	if !ok {
 		return errors.New("user account is not valid")

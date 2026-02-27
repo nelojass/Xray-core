@@ -6,10 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/utils"
-	"github.com/xtls/xray-core/features/routing"
-	"github.com/xtls/xray-core/transport/internet/tagged"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/routing"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/tagged"
 )
 
 type pingClient struct {
@@ -62,7 +61,6 @@ func (s *pingClient) MeasureDelay(httpMethod string) (time.Duration, error) {
 	if err != nil {
 		return rttFailed, err
 	}
-	req.Header.Set("User-Agent", utils.ChromeUA)
 
 	start := time.Now()
 	resp, err := s.httpClient.Do(req)

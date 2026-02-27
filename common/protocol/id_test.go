@@ -3,8 +3,8 @@ package protocol_test
 import (
 	"testing"
 
-	. "github.com/xtls/xray-core/common/protocol"
-	"github.com/xtls/xray-core/common/uuid"
+	. "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/uuid"
 )
 
 func TestIdEquals(t *testing.T) {

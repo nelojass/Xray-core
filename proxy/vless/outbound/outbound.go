@@ -5,40 +5,36 @@ import (
 	"context"
 	gotls "crypto/tls"
 	"encoding/base64"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/dispatcher"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/stats"
 	"reflect"
+	"strconv"
 	"strings"
-	"sync"
 	"time"
 	"unsafe"
 
 	utls "github.com/refraction-networking/utls"
-	proxyman "github.com/xtls/xray-core/app/proxyman/outbound"
-	"github.com/xtls/xray-core/app/reverse"
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/buf"
-	xctx "github.com/xtls/xray-core/common/ctx"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/mux"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/protocol"
-	"github.com/xtls/xray-core/common/retry"
-	"github.com/xtls/xray-core/common/session"
-	"github.com/xtls/xray-core/common/signal"
-	"github.com/xtls/xray-core/common/task"
-	"github.com/xtls/xray-core/common/xudp"
-	"github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/features/policy"
-	"github.com/xtls/xray-core/features/routing"
-	"github.com/xtls/xray-core/proxy"
-	"github.com/xtls/xray-core/proxy/vless"
-	"github.com/xtls/xray-core/proxy/vless/encoding"
-	"github.com/xtls/xray-core/proxy/vless/encryption"
-	"github.com/xtls/xray-core/transport"
-	"github.com/xtls/xray-core/transport/internet"
-	"github.com/xtls/xray-core/transport/internet/reality"
-	"github.com/xtls/xray-core/transport/internet/stat"
-	"github.com/xtls/xray-core/transport/internet/tls"
-	"github.com/xtls/xray-core/transport/pipe"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/buf"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/retry"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/session"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/signal"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/task"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/xudp"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/policy"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vless"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vless/encoding"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vless/encryption"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/reality"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/stat"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/tls"
 )
 
 func init() {
@@ -49,40 +45,35 @@ func init() {
 
 // Handler is an outbound connection handler for VLess protocol.
 type Handler struct {
-	server        *protocol.ServerSpec
+	serverList    *protocol.ServerList
+	serverPicker  protocol.ServerPicker
 	policyManager policy.Manager
+	statManager   stats.Manager
 	cone          bool
 	encryption    *encryption.ClientInstance
-	reverse       *Reverse
-
-	testpre  uint32
-	initpre  sync.Once
-	preConns chan *ConnExpire
-}
-
-type ConnExpire struct {
-	Conn   stat.Connection
-	Expire time.Time
 }
 
 // New creates a new VLess outbound handler.
 func New(ctx context.Context, config *Config) (*Handler, error) {
-	if config.Vnext == nil {
-		return nil, errors.New(`no vnext found`)
-	}
-	server, err := protocol.NewServerSpecFromPB(config.Vnext)
-	if err != nil {
-		return nil, errors.New("failed to get server spec").Base(err).AtError()
+	serverList := protocol.NewServerList()
+	for _, rec := range config.Vnext {
+		s, err := protocol.NewServerSpecFromPB(rec)
+		if err != nil {
+			return nil, errors.New("failed to parse server spec").Base(err).AtError()
+		}
+		serverList.AddServer(s)
 	}
 
 	v := core.MustFromContext(ctx)
 	handler := &Handler{
-		server:        server,
+		serverList:    serverList,
+		serverPicker:  protocol.NewRoundRobinServerPicker(serverList),
 		policyManager: v.GetFeature(policy.ManagerType()).(policy.Manager),
+		statManager:   v.GetFeature(stats.ManagerType()).(stats.Manager),
 		cone:          ctx.Value("cone").(bool),
 	}
 
-	a := handler.server.User.Account.(*vless.MemoryAccount)
+	a := handler.serverPicker.PickServer().PickUser().Account.(*vless.MemoryAccount)
 	if a.Encryption != "" && a.Encryption != "none" {
 		s := strings.Split(a.Encryption, ".")
 		var nfsPKeysBytes [][]byte
@@ -96,106 +87,41 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 		}
 	}
 
-	if a.Reverse != nil {
-		handler.reverse = &Reverse{
-			tag:        a.Reverse.Tag,
-			dispatcher: v.GetFeature(routing.DispatcherType()).(routing.Dispatcher),
-			ctx: session.ContextWithInbound(ctx, &session.Inbound{
-				Tag:  a.Reverse.Tag,
-				User: handler.server.User, // TODO: email
-			}),
-			handler: handler,
-		}
-		handler.reverse.monitorTask = &task.Periodic{
-			Execute:  handler.reverse.monitor,
-			Interval: time.Second * 2,
-		}
-		go func() {
-			time.Sleep(2 * time.Second)
-			handler.reverse.Start()
-		}()
-	}
-
-	handler.testpre = a.Testpre
-
 	return handler, nil
-}
-
-// Close implements common.Closable.Close().
-func (h *Handler) Close() error {
-	if h.preConns != nil {
-		close(h.preConns)
-	}
-	if h.reverse != nil {
-		return h.reverse.Close()
-	}
-	return nil
 }
 
 // Process implements proxy.Outbound.Process().
 func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer internet.Dialer) error {
 	outbounds := session.OutboundsFromContext(ctx)
 	ob := outbounds[len(outbounds)-1]
-	if !ob.Target.IsValid() && ob.Target.Address.String() != "v1.rvs.cool" {
+	if !ob.Target.IsValid() {
 		return errors.New("target not specified").AtError()
 	}
 	ob.Name = "vless"
 
-	rec := h.server
+	var rec *protocol.ServerSpec
 	var conn stat.Connection
-
-	if h.testpre > 0 && h.reverse == nil {
-		h.initpre.Do(func() {
-			h.preConns = make(chan *ConnExpire)
-			for range h.testpre { // TODO: randomize
-				go func() {
-					defer func() { recover() }()
-					ctx := xctx.ContextWithID(context.Background(), session.NewID())
-					for {
-						conn, err := dialer.Dial(ctx, rec.Destination)
-						if err != nil {
-							errors.LogWarningInner(ctx, err, "pre-connect failed")
-							continue
-						}
-						h.preConns <- &ConnExpire{Conn: conn, Expire: time.Now().Add(time.Minute * 2)} // TODO: customize & randomize
-						time.Sleep(time.Millisecond * 200)                                             // TODO: customize & randomize
-					}
-				}()
-			}
-		})
-		for {
-			connTime := <-h.preConns
-			if connTime == nil {
-				return errors.New("closed handler").AtWarning()
-			}
-			if time.Now().Before(connTime.Expire) {
-				conn = connTime.Conn
-				break
-			}
-			connTime.Conn.Close()
+	if err := retry.ExponentialBackoff(5, 200).On(func() error {
+		rec = h.serverPicker.PickServer()
+		var err error
+		conn, err = dialer.Dial(ctx, rec.Destination())
+		if err != nil {
+			return err
 		}
-	}
-
-	if conn == nil {
-		if err := retry.ExponentialBackoff(5, 200).On(func() error {
-			var err error
-			conn, err = dialer.Dial(ctx, rec.Destination)
-			if err != nil {
-				return err
-			}
-			return nil
-		}); err != nil {
-			return errors.New("failed to find an available destination").Base(err).AtWarning()
-		}
+		return nil
+	}); err != nil {
+		return errors.New("failed to find an available destination").Base(err).AtWarning()
 	}
 	defer conn.Close()
 
-	ob.Conn = conn // for Vision's pre-connect
-
-	iConn := stat.TryUnwrapStatsConn(conn)
+	iConn := conn
+	if statConn, ok := iConn.(*stat.CounterConnection); ok {
+		iConn = statConn.Connection
+	}
 	target := ob.Target
-	errors.LogInfo(ctx, "tunneling request to ", target, " via ", rec.Destination.NetAddr())
 
+	clientId := session.ClientIdFromContext(ctx)
+	errors.LogInfo(ctx, "tunneling request to ", target, " via ", rec.Destination().NetAddr(), " clientId:", clientId)
 	if h.encryption != nil {
 		var err error
 		if conn, err = h.encryption.Handshake(conn); err != nil {
@@ -207,24 +133,32 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 	if target.Network == net.Network_UDP {
 		command = protocol.RequestCommandUDP
 	}
-	if target.Address.Family().IsDomain() {
-		switch target.Address.Domain() {
-		case "v1.mux.cool":
-			command = protocol.RequestCommandMux
-		case "v1.rvs.cool":
-			if target.Network != net.Network_Unknown {
-				return errors.New("nice try baby").AtError()
+	if target.Address.Family().IsDomain() && target.Address.Domain() == "v1.mux.cool" {
+		command = protocol.RequestCommandMux
+	}
+
+	//todo: add vless traffic counter
+	if sizeStatWriter, ok := link.Writer.(*dispatcher.SizeStatWriter); ok {
+		name := "user>>>" + strconv.FormatUint(clientId, 10) + ">>>traffic>>>downlink"
+		if c, _ := stats.GetOrRegisterCounter(h.statManager, name); c != nil {
+			sizeStatWriter.Counter = c
+		}
+	} else if buWriter, ok := link.Writer.(*buf.EndpointOverrideWriter); ok {
+		name := "user>>>" + strconv.FormatUint(clientId, 10) + ">>>traffic>>>downlink"
+		if c, _ := stats.GetOrRegisterCounter(h.statManager, name); c != nil {
+			if statWriter, ok := buWriter.Writer.(*dispatcher.SizeStatWriter); ok {
+				statWriter.Counter = c
 			}
-			command = protocol.RequestCommandRvs
 		}
 	}
 
 	request := &protocol.RequestHeader{
-		Version: encoding.Version,
-		User:    rec.User,
-		Command: command,
-		Address: target.Address,
-		Port:    target.Port,
+		Version:  encoding.Version,
+		User:     rec.PickUser(),
+		Command:  command,
+		Address:  target.Address,
+		Port:     target.Port,
+		ClientId: clientId,
 	}
 
 	account := request.User.Account.(*vless.MemoryAccount)
@@ -250,7 +184,7 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 			}
 		case protocol.RequestCommandMux:
 			fallthrough // let server break Mux connections that contain TCP requests
-		case protocol.RequestCommandTCP, protocol.RequestCommandRvs:
+		case protocol.RequestCommandTCP:
 			var t reflect.Type
 			var p uintptr
 			if commonConn, ok := conn.(*encryption.CommonConn); ok {
@@ -275,8 +209,6 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 			r, _ := t.FieldByName("rawInput")
 			input = (*bytes.Reader)(unsafe.Pointer(p + i.Offset))
 			rawInput = (*bytes.Buffer)(unsafe.Pointer(p + r.Offset))
-		default:
-			panic("unknown VLESS request command")
 		}
 	default:
 		ob.CanSpliceCopy = 3
@@ -410,68 +342,4 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 	}
 
 	return nil
-}
-
-type Reverse struct {
-	tag         string
-	dispatcher  routing.Dispatcher
-	ctx         context.Context
-	handler     *Handler
-	workers     []*reverse.BridgeWorker
-	monitorTask *task.Periodic
-}
-
-func (r *Reverse) monitor() error {
-	var activeWorkers []*reverse.BridgeWorker
-	for _, w := range r.workers {
-		if w.IsActive() {
-			activeWorkers = append(activeWorkers, w)
-		}
-	}
-	if len(activeWorkers) != len(r.workers) {
-		r.workers = activeWorkers
-	}
-
-	var numConnections uint32
-	var numWorker uint32
-	for _, w := range r.workers {
-		if w.IsActive() {
-			numConnections += w.Connections()
-			numWorker++
-		}
-	}
-	if numWorker == 0 || numConnections/numWorker > 16 {
-		reader1, writer1 := pipe.New(pipe.WithSizeLimit(2 * buf.Size))
-		reader2, writer2 := pipe.New(pipe.WithSizeLimit(2 * buf.Size))
-		link1 := &transport.Link{Reader: reader1, Writer: writer2}
-		link2 := &transport.Link{Reader: reader2, Writer: writer1}
-		w := &reverse.BridgeWorker{
-			Tag:        r.tag,
-			Dispatcher: r.dispatcher,
-		}
-		worker, err := mux.NewServerWorker(session.ContextWithIsReverseMux(r.ctx, true), w, link1)
-		if err != nil {
-			errors.LogWarningInner(r.ctx, err, "failed to create mux server worker")
-			return nil
-		}
-		w.Worker = worker
-		r.workers = append(r.workers, w)
-		go func() {
-			ctx := session.ContextWithOutbounds(r.ctx, []*session.Outbound{{
-				Target: net.Destination{Address: net.DomainAddress("v1.rvs.cool")},
-			}})
-			r.handler.Process(ctx, link2, session.FullHandlerFromContext(ctx).(*proxyman.Handler))
-			common.Interrupt(reader1)
-			common.Interrupt(reader2)
-		}()
-	}
-	return nil
-}
-
-func (r *Reverse) Start() error {
-	return r.monitorTask.Start()
-}
-
-func (r *Reverse) Close() error {
-	return r.monitorTask.Close()
 }

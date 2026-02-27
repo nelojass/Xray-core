@@ -11,28 +11,27 @@ import (
 	"sync"
 	"text/template"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/buf"
-	"github.com/xtls/xray-core/common/bytespool"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/protocol"
-	"github.com/xtls/xray-core/common/retry"
-	"github.com/xtls/xray-core/common/session"
-	"github.com/xtls/xray-core/common/signal"
-	"github.com/xtls/xray-core/common/task"
-	"github.com/xtls/xray-core/common/utils"
-	"github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/features/policy"
-	"github.com/xtls/xray-core/transport"
-	"github.com/xtls/xray-core/transport/internet"
-	"github.com/xtls/xray-core/transport/internet/stat"
-	"github.com/xtls/xray-core/transport/internet/tls"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/buf"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/bytespool"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/retry"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/session"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/signal"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/task"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/policy"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/stat"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/tls"
 	"golang.org/x/net/http2"
 )
 
 type Client struct {
-	server        *protocol.ServerSpec
+	serverPicker  protocol.ServerPicker
 	policyManager policy.Manager
 	header        []*Header
 }
@@ -49,17 +48,21 @@ var (
 
 // NewClient create a new http client based on the given config.
 func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
-	if config.Server == nil {
-		return nil, errors.New(`no target server found`)
+	serverList := protocol.NewServerList()
+	for _, rec := range config.Server {
+		s, err := protocol.NewServerSpecFromPB(rec)
+		if err != nil {
+			return nil, errors.New("failed to get server spec").Base(err)
+		}
+		serverList.AddServer(s)
 	}
-	server, err := protocol.NewServerSpecFromPB(config.Server)
-	if err != nil {
-		return nil, errors.New("failed to get server spec").Base(err)
+	if serverList.Size() == 0 {
+		return nil, errors.New("0 target server")
 	}
 
 	v := core.MustFromContext(ctx)
 	return &Client{
-		server:        server,
+		serverPicker:  protocol.NewRoundRobinServerPicker(serverList),
 		policyManager: v.GetFeature(policy.ManagerType()).(policy.Manager),
 		header:        config.Header,
 	}, nil
@@ -81,9 +84,7 @@ func (c *Client) Process(ctx context.Context, link *transport.Link, dialer inter
 		return errors.New("UDP is not supported by HTTP outbound")
 	}
 
-	server := c.server
-	dest := server.Destination
-	user := server.User
+	var user *protocol.MemoryUser
 	var conn stat.Connection
 
 	mbuf, _ := link.Reader.ReadMultiBuffer()
@@ -101,6 +102,10 @@ func (c *Client) Process(ctx context.Context, link *transport.Link, dialer inter
 	}
 
 	if err := retry.ExponentialBackoff(5, 100).On(func() error {
+		server := c.serverPicker.PickServer()
+		dest := server.Destination()
+		user = server.PickUser()
+
 		netConn, err := setUpHTTPTunnel(ctx, dest, targetAddr, user, dialer, header, firstPayload)
 		if netConn != nil {
 			if _, ok := netConn.(*http2Conn); !ok {
@@ -220,9 +225,6 @@ func setUpHTTPTunnel(ctx context.Context, dest net.Destination, target string, u
 	for _, h := range header {
 		req.Header.Set(h.Key, h.Value)
 	}
-	if req.Header.Get("User-Agent") == "" {
-		req.Header.Set("User-Agent", utils.ChromeUA)
-	}
 
 	connectHTTP1 := func(rawConn net.Conn) (net.Conn, error) {
 		req.Header.Set("Proxy-Connection", "Keep-Alive")
@@ -300,16 +302,13 @@ func setUpHTTPTunnel(ctx context.Context, dest net.Destination, target string, u
 		return nil, err
 	}
 
-	iConn := stat.TryUnwrapStatsConn(rawConn)
+	iConn := rawConn
+	if statConn, ok := iConn.(*stat.CounterConnection); ok {
+		iConn = statConn.Connection
+	}
 
 	nextProto := ""
 	if tlsConn, ok := iConn.(*tls.Conn); ok {
-		if err := tlsConn.HandshakeContext(ctx); err != nil {
-			rawConn.Close()
-			return nil, err
-		}
-		nextProto = tlsConn.ConnectionState().NegotiatedProtocol
-	} else if tlsConn, ok := iConn.(*tls.UConn); ok {
 		if err := tlsConn.HandshakeContext(ctx); err != nil {
 			rawConn.Close()
 			return nil, err

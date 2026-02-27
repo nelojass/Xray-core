@@ -4,47 +4,45 @@ import (
 	"bytes"
 	"context"
 	gotls "crypto/tls"
-	"encoding/base64"
-	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/apernet/quic-go"
-	"github.com/apernet/quic-go/http3"
-	goreality "github.com/xtls/reality"
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/net"
-	http_proto "github.com/xtls/xray-core/common/protocol/http"
-	"github.com/xtls/xray-core/common/signal/done"
-	"github.com/xtls/xray-core/transport/internet"
-	"github.com/xtls/xray-core/transport/internet/reality"
-	"github.com/xtls/xray-core/transport/internet/stat"
-	"github.com/xtls/xray-core/transport/internet/tls"
+	"v12w.x34y.com/flyfishLib/forkHub/quic-go/quic-go"
+	"v12w.x34y.com/flyfishLib/forkHub/quic-go/quic-go/http3"
+	goreality "v12w.x34y.com/flyfishLib/forkHub/xtls/reality"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	http_proto "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol/http"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/signal/done"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/reality"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/stat"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/tls"
 )
 
 type requestHandler struct {
-	config         *Config
-	host           string
-	path           string
-	ln             *Listener
-	sessionMu      *sync.Mutex
-	sessions       sync.Map
-	localAddr      net.Addr
-	socketSettings *internet.SocketConfig
+	config		*Config
+	host		string
+	path		string
+	ln		*Listener
+	sessionMu	*sync.Mutex
+	sessions	sync.Map
+	localAddr	net.Addr
 }
 
 type httpSession struct {
-	uploadQueue *uploadQueue
+	uploadQueue	*uploadQueue
 	// for as long as the GET request is not opened by the client, this will be
 	// open ("undone"), and the session may be expired within a certain TTL.
 	// after the client connects, this becomes "done" and the session lives as
 	// long as the GET request.
-	isFullyConnected *done.Instance
+	isFullyConnected	*done.Instance
 }
 
 func (h *requestHandler) upsertSession(sessionId string) *httpSession {
@@ -64,8 +62,8 @@ func (h *requestHandler) upsertSession(sessionId string) *httpSession {
 	}
 
 	s := &httpSession{
-		uploadQueue:      NewUploadQueue(h.ln.config.GetNormalizedScMaxBufferedPosts()),
-		isFullyConnected: done.New(),
+		uploadQueue:		NewUploadQueue(h.ln.config.GetNormalizedScMaxBufferedPosts()),
+		isFullyConnected:	done.New(),
 	}
 
 	h.sessions.Store(sessionId, s)
@@ -101,24 +99,6 @@ func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Req
 	}
 
 	h.config.WriteResponseHeader(writer)
-	length := int(h.config.GetNormalizedXPaddingBytes().rand())
-	config := XPaddingConfig{Length: length}
-
-	if h.config.XPaddingObfsMode {
-		config.Placement = XPaddingPlacement{
-			Placement: h.config.XPaddingPlacement,
-			Key:       h.config.XPaddingKey,
-			Header:    h.config.XPaddingHeader,
-		}
-		config.Method = PaddingMethod(h.config.XPaddingMethod)
-	} else {
-		config.Placement = XPaddingPlacement{
-			Placement: PlacementHeader,
-			Header:    "X-Padding",
-		}
-	}
-
-	h.config.ApplyXPaddingToHeader(writer.Header(), config)
 
 	/*
 		clientVer := []int{0, 0, 0}
@@ -129,15 +109,29 @@ func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Req
 	*/
 
 	validRange := h.config.GetNormalizedXPaddingBytes()
-	paddingValue, paddingPlacement := h.config.ExtractXPaddingFromRequest(request, h.config.XPaddingObfsMode)
+	paddingLength := 0
 
-	if !h.config.IsPaddingValid(paddingValue, validRange.From, validRange.To, PaddingMethod(h.config.XPaddingMethod)) {
-		errors.LogInfo(context.Background(), "invalid padding ("+paddingPlacement+") length:", int32(len(paddingValue)))
+	referrer := request.Header.Get("Referer")
+	if referrer != "" {
+		if referrerURL, err := url.Parse(referrer); err == nil {
+			// Browser dialer cannot control the host part of referrer header, so only check the query
+			paddingLength = len(referrerURL.Query().Get("x_padding"))
+		}
+	} else {
+		paddingLength = len(request.URL.Query().Get("x_padding"))
+	}
+
+	if int32(paddingLength) < validRange.From || int32(paddingLength) > validRange.To {
+		errors.LogInfo(context.Background(), "invalid x_padding length:", int32(paddingLength))
 		writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	sessionId, seqStr := h.config.ExtractMetaFromRequest(request, h.path)
+	sessionId := ""
+	subpath := strings.Split(request.URL.Path[len(h.path):], "/")
+	if len(subpath) > 0 {
+		sessionId = subpath[0]
+	}
 
 	if sessionId == "" && h.config.Mode != "" && h.config.Mode != "auto" && h.config.Mode != "stream-one" && h.config.Mode != "stream-up" {
 		errors.LogInfo(context.Background(), "stream-one mode is not allowed")
@@ -145,36 +139,26 @@ func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Req
 		return
 	}
 
-	var forwardedAddrs []net.Address
-	if h.socketSettings != nil && len(h.socketSettings.TrustedXForwardedFor) > 0 {
-		for _, key := range h.socketSettings.TrustedXForwardedFor {
-			if len(request.Header.Values(key)) > 0 {
-				forwardedAddrs = http_proto.ParseXForwardedFor(request.Header)
-				break
-			}
-		}
-	} else {
-		forwardedAddrs = http_proto.ParseXForwardedFor(request.Header)
-	}
+	forwardedAddrs := http_proto.ParseXForwardedFor(request.Header)
 	var remoteAddr net.Addr
 	var err error
 	remoteAddr, err = net.ResolveTCPAddr("tcp", request.RemoteAddr)
 	if err != nil {
 		remoteAddr = &net.TCPAddr{
-			IP:   []byte{0, 0, 0, 0},
-			Port: 0,
+			IP:	[]byte{0, 0, 0, 0},
+			Port:	0,
 		}
 	}
 	if request.ProtoMajor == 3 {
 		remoteAddr = &net.UDPAddr{
-			IP:   remoteAddr.(*net.TCPAddr).IP,
-			Port: remoteAddr.(*net.TCPAddr).Port,
+			IP:	remoteAddr.(*net.TCPAddr).IP,
+			Port:	remoteAddr.(*net.TCPAddr).Port,
 		}
 	}
 	if len(forwardedAddrs) > 0 && forwardedAddrs[0].Family().IsIP() {
 		remoteAddr = &net.TCPAddr{
-			IP:   forwardedAddrs[0].IP(),
-			Port: 0,
+			IP:	forwardedAddrs[0].IP(),
+			Port:	0,
 		}
 	}
 
@@ -183,38 +167,23 @@ func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Req
 		currentSession = h.upsertSession(sessionId)
 	}
 	scMaxEachPostBytes := int(h.ln.config.GetNormalizedScMaxEachPostBytes().To)
-	uplinkHTTPMethod := h.config.GetNormalizedUplinkHTTPMethod()
-	isUplinkRequest := false
 
-	if uplinkHTTPMethod != "GET" && request.Method == uplinkHTTPMethod {
-		isUplinkRequest = true
-	}
-
-	uplinkDataPlacement := h.config.GetNormalizedUplinkDataPlacement()
-	uplinkDataKey := h.config.UplinkDataKey
-
-	switch uplinkDataPlacement {
-	case PlacementHeader:
-		if request.Header.Get(uplinkDataKey+"-Upstream") == "1" {
-			isUplinkRequest = true
+	if request.Method == "POST" && sessionId != "" {	// stream-up, packet-up
+		seq := ""
+		if len(subpath) > 1 {
+			seq = subpath[1]
 		}
-	case PlacementCookie:
-		if c, _ := request.Cookie(uplinkDataKey + "_upstream"); c != nil && c.Value == "1" {
-			isUplinkRequest = true
-		}
-	}
 
-	if isUplinkRequest && sessionId != "" { // stream-up, packet-up
-		if seqStr == "" {
+		if seq == "" {
 			if h.config.Mode != "" && h.config.Mode != "auto" && h.config.Mode != "stream-up" {
 				errors.LogInfo(context.Background(), "stream-up mode is not allowed")
 				writer.WriteHeader(http.StatusBadRequest)
 				return
 			}
 			httpSC := &httpServerConn{
-				Instance:       done.New(),
-				Reader:         request.Body,
-				ResponseWriter: writer,
+				Instance:	done.New(),
+				Reader:		request.Body,
+				ResponseWriter:	writer,
 			}
 			err = currentSession.uploadQueue.Push(Packet{
 				Reader: httpSC,
@@ -227,7 +196,6 @@ func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Req
 				writer.Header().Set("Cache-Control", "no-store")
 				writer.WriteHeader(http.StatusOK)
 				scStreamUpServerSecs := h.config.GetNormalizedScStreamUpServerSecs()
-				referrer := request.Header.Get("Referer")
 				if referrer != "" && scStreamUpServerSecs.To > 0 {
 					go func() {
 						for {
@@ -254,62 +222,7 @@ func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Req
 			return
 		}
 
-		var payload []byte
-
-		if uplinkDataPlacement != PlacementBody {
-			var encodedStr string
-			switch uplinkDataPlacement {
-			case PlacementHeader:
-				dataLenStr := request.Header.Get(uplinkDataKey + "-Length")
-
-				if dataLenStr != "" {
-					dataLen, _ := strconv.Atoi(dataLenStr)
-					var chunks []string
-					i := 0
-
-					for {
-						chunk := request.Header.Get(fmt.Sprintf("%s-%d", uplinkDataKey, i))
-						if chunk == "" {
-							break
-						}
-						chunks = append(chunks, chunk)
-						i++
-					}
-
-					encodedStr = strings.Join(chunks, "")
-					if len(encodedStr) != dataLen {
-						encodedStr = ""
-					}
-				}
-			case PlacementCookie:
-				var chunks []string
-				i := 0
-
-				for {
-					cookieName := fmt.Sprintf("%s_%d", uplinkDataKey, i)
-					if c, _ := request.Cookie(cookieName); c != nil {
-						chunks = append(chunks, c.Value)
-						i++
-					} else {
-						break
-					}
-				}
-
-				if len(chunks) > 0 {
-					encodedStr = strings.Join(chunks, "")
-				}
-			}
-
-			if encodedStr != "" {
-				payload, err = base64.RawURLEncoding.DecodeString(encodedStr)
-			} else {
-				errors.LogInfoInner(context.Background(), err, "failed to extract data from key "+uplinkDataKey+" placed in "+uplinkDataPlacement)
-				writer.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-		} else {
-			payload, err = io.ReadAll(io.LimitReader(request.Body, int64(scMaxEachPostBytes)+1))
-		}
+		payload, err := io.ReadAll(io.LimitReader(request.Body, int64(scMaxEachPostBytes)+1))
 
 		if len(payload) > scMaxEachPostBytes {
 			errors.LogInfo(context.Background(), "Too large upload. scMaxEachPostBytes is set to ", scMaxEachPostBytes, "but request size exceed it. Adjust scMaxEachPostBytes on the server to be at least as large as client.")
@@ -323,7 +236,7 @@ func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Req
 			return
 		}
 
-		seq, err := strconv.ParseUint(seqStr, 10, 64)
+		seqInt, err := strconv.ParseUint(seq, 10, 64)
 		if err != nil {
 			errors.LogInfoInner(context.Background(), err, "failed to upload (ParseUint)")
 			writer.WriteHeader(http.StatusInternalServerError)
@@ -331,8 +244,8 @@ func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Req
 		}
 
 		err = currentSession.uploadQueue.Push(Packet{
-			Payload: payload,
-			Seq:     seq,
+			Payload:	payload,
+			Seq:		seqInt,
 		})
 
 		if err != nil {
@@ -342,7 +255,7 @@ func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Req
 		}
 
 		writer.WriteHeader(http.StatusOK)
-	} else if request.Method == "GET" || sessionId == "" { // stream-down, stream-one
+	} else if request.Method == "GET" || sessionId == "" {	// stream-down, stream-one
 		if sessionId != "" {
 			// after GET is done, the connection is finished. disable automatic
 			// session reaping, and handle it in defer
@@ -366,17 +279,17 @@ func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Req
 		writer.(http.Flusher).Flush()
 
 		httpSC := &httpServerConn{
-			Instance:       done.New(),
-			Reader:         request.Body,
-			ResponseWriter: writer,
+			Instance:	done.New(),
+			Reader:		request.Body,
+			ResponseWriter:	writer,
 		}
 		conn := splitConn{
-			writer:     httpSC,
-			reader:     httpSC,
-			remoteAddr: remoteAddr,
-			localAddr:  h.localAddr,
+			writer:		httpSC,
+			reader:		httpSC,
+			remoteAddr:	remoteAddr,
+			localAddr:	h.localAddr,
 		}
-		if sessionId != "" { // if not stream-one
+		if sessionId != "" {	// if not stream-one
 			conn.reader = currentSession.uploadQueue
 		}
 
@@ -398,7 +311,7 @@ func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Req
 type httpServerConn struct {
 	sync.Mutex
 	*done.Instance
-	io.Reader // no need to Close request.Body
+	io.Reader	// no need to Close request.Body
 	http.ResponseWriter
 }
 
@@ -423,13 +336,13 @@ func (c *httpServerConn) Close() error {
 
 type Listener struct {
 	sync.Mutex
-	server     http.Server
-	h3server   *http3.Server
-	listener   net.Listener
-	h3listener *quic.EarlyListener
-	config     *Config
-	addConn    internet.ConnHandler
-	isH3       bool
+	server		http.Server
+	h3server	*http3.Server
+	listener	net.Listener
+	h3listener	*quic.EarlyListener
+	config		*Config
+	addConn		internet.ConnHandler
+	isH3		bool
 }
 
 func ListenXH(ctx context.Context, address net.Address, port net.Port, streamSettings *internet.MemoryStreamConfig, addConn internet.ConnHandler) (internet.Listener, error) {
@@ -443,31 +356,30 @@ func ListenXH(ctx context.Context, address net.Address, port net.Port, streamSet
 		}
 	}
 	handler := &requestHandler{
-		config:         l.config,
-		host:           l.config.Host,
-		path:           l.config.GetNormalizedPath(),
-		ln:             l,
-		sessionMu:      &sync.Mutex{},
-		sessions:       sync.Map{},
-		socketSettings: streamSettings.SocketSettings,
+		config:		l.config,
+		host:		l.config.Host,
+		path:		l.config.GetNormalizedPath(),
+		ln:		l,
+		sessionMu:	&sync.Mutex{},
+		sessions:	sync.Map{},
 	}
 	tlsConfig := getTLSConfig(streamSettings)
 	l.isH3 = len(tlsConfig.NextProtos) == 1 && tlsConfig.NextProtos[0] == "h3"
 
 	var err error
-	if port == net.Port(0) { // unix
+	if port == net.Port(0) {	// unix
 		l.listener, err = internet.ListenSystem(ctx, &net.UnixAddr{
-			Name: address.Domain(),
-			Net:  "unix",
+			Name:	address.Domain(),
+			Net:	"unix",
 		}, streamSettings.SocketSettings)
 		if err != nil {
 			return nil, errors.New("failed to listen UNIX domain socket for XHTTP on ", address).Base(err)
 		}
 		errors.LogInfo(ctx, "listening UNIX domain socket for XHTTP on ", address)
-	} else if l.isH3 { // quic
+	} else if l.isH3 {	// quic
 		Conn, err := internet.ListenSystemPacket(context.Background(), &net.UDPAddr{
-			IP:   address.IP(),
-			Port: int(port),
+			IP:	address.IP(),
+			Port:	int(port),
 		}, streamSettings.SocketSettings)
 		if err != nil {
 			return nil, errors.New("failed to listen UDP for XHTTP/3 on ", address, ":", port).Base(err)
@@ -488,10 +400,10 @@ func ListenXH(ctx context.Context, address net.Address, port net.Port, streamSet
 				errors.LogErrorInner(ctx, err, "failed to serve HTTP/3 for XHTTP/3")
 			}
 		}()
-	} else { // tcp
+	} else {	// tcp
 		l.listener, err = internet.ListenSystem(ctx, &net.TCPAddr{
-			IP:   address.IP(),
-			Port: int(port),
+			IP:	address.IP(),
+			Port:	int(port),
 		}, streamSettings.SocketSettings)
 		if err != nil {
 			return nil, errors.New("failed to listen TCP for XHTTP on ", address, ":", port).Base(err)
@@ -517,10 +429,10 @@ func ListenXH(ctx context.Context, address net.Address, port net.Port, streamSet
 		protocols.SetHTTP1(true)
 		protocols.SetUnencryptedHTTP2(true)
 		l.server = http.Server{
-			Handler:           handler,
-			ReadHeaderTimeout: time.Second * 4,
-			MaxHeaderBytes:    8192,
-			Protocols:         protocols,
+			Handler:		handler,
+			ReadHeaderTimeout:	time.Second * 4,
+			MaxHeaderBytes:		8192,
+			Protocols:		protocols,
 		}
 		go func() {
 			if err := l.server.Serve(l.listener); err != nil {

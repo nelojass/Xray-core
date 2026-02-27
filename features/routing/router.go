@@ -1,9 +1,9 @@
 package routing
 
 import (
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/serial"
-	"github.com/xtls/xray-core/features"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/serial"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features"
 )
 
 // Router is a feature to choose an outbound tag for the given request.
@@ -16,7 +16,6 @@ type Router interface {
 	PickRoute(ctx Context) (Route, error)
 	AddRule(config *serial.TypedMessage, shouldAppend bool) error
 	RemoveRule(tag string) error
-	ListRule() []Route
 }
 
 // Route is the routing result of Router feature.
@@ -64,11 +63,6 @@ func (DefaultRouter) AddRule(config *serial.TypedMessage, shouldAppend bool) err
 // RemoveRule implements Router.
 func (DefaultRouter) RemoveRule(tag string) error {
 	return common.ErrNoClue
-}
-
-// ListRule implements Router.
-func (DefaultRouter) ListRule() []Route {
-	return nil
 }
 
 // Start implements common.Runnable.

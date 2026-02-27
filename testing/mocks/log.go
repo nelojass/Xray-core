@@ -8,13 +8,13 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	log "github.com/xtls/xray-core/common/log"
+	log "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/log"
 )
 
 // LogHandler is a mock of Handler interface
 type LogHandler struct {
-	ctrl     *gomock.Controller
-	recorder *LogHandlerMockRecorder
+	ctrl		*gomock.Controller
+	recorder	*LogHandlerMockRecorder
 }
 
 // LogHandlerMockRecorder is the mock recorder for LogHandler

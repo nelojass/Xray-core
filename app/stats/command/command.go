@@ -5,15 +5,15 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/xtls/xray-core/app/stats"
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/strmatcher"
-	"github.com/xtls/xray-core/core"
-	feature_stats "github.com/xtls/xray-core/features/stats"
-	grpc "google.golang.org/grpc"
-	codes "google.golang.org/grpc/codes"
-	status "google.golang.org/grpc/status"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/stats"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/strmatcher"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
+	feature_stats "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/stats"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // statsServer is an implementation of StatsService.
@@ -77,12 +77,6 @@ func (s *statsServer) GetStatsOnlineIpList(ctx context.Context, request *GetStat
 	return &GetStatsOnlineIpListResponse{
 		Name: request.Name,
 		Ips:  ips,
-	}, nil
-}
-
-func (s *statsServer) GetAllOnlineUsers(ctx context.Context, request *GetAllOnlineUsersRequest) (*GetAllOnlineUsersResponse, error) {
-	return &GetAllOnlineUsersResponse{
-		Users: s.stats.GetAllOnlineUsers(),
 	}, nil
 }
 

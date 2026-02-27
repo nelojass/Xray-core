@@ -3,8 +3,8 @@ package command
 import (
 	"strings"
 
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/features/routing"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/routing"
 )
 
 // routingContext is an wrapper of protobuf RoutingContext as implementation of routing.Context and routing.Route.
@@ -42,6 +42,10 @@ func (c routingContext) GetVlessRoute() net.Port {
 
 func (c routingContext) GetRuleTag() string {
 	return ""
+}
+
+func (c routingContext) GetFilterRuleTags() []string {
+	return nil
 }
 
 // GetSkipDNSResolve is a mock implementation here to match the interface,

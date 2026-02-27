@@ -3,35 +3,37 @@ package wireguard
 import (
 	"context"
 	"errors"
+	"io"
+	"net"
 	"net/netip"
 	"strconv"
 	"sync"
 
-	"golang.zx2c4.com/wireguard/conn"
+	"v12w.x34y.com/flyfishLib/forkHub/golang.zx2c4.com/wireguard/conn"
 
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/features/dns"
-	"github.com/xtls/xray-core/transport/internet"
+	xnet "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/dns"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet"
 )
 
 type netReadInfo struct {
 	// status
-	waiter sync.WaitGroup
+	waiter	sync.WaitGroup
 	// param
-	buff []byte
+	buff	[]byte
 	// result
-	bytes    int
-	endpoint conn.Endpoint
-	err      error
+	bytes		int
+	endpoint	conn.Endpoint
+	err		error
 }
 
 // reduce duplicated code
 type netBind struct {
-	dns       dns.Client
-	dnsOption dns.IPOption
+	dns		dns.Client
+	dnsOption	dns.IPOption
 
-	workers   int
-	readQueue chan *netReadInfo
+	workers		int
+	readQueue	chan *netReadInfo
 }
 
 // SetMark implements conn.Bind
@@ -50,21 +52,21 @@ func (n *netBind) ParseEndpoint(s string) (conn.Endpoint, error) {
 		return nil, err
 	}
 
-	addr := net.ParseAddress(ipStr)
-	if addr.Family() == net.AddressFamilyDomain {
+	addr := xnet.ParseAddress(ipStr)
+	if addr.Family() == xnet.AddressFamilyDomain {
 		ips, _, err := n.dns.LookupIP(addr.Domain(), n.dnsOption)
 		if err != nil {
 			return nil, err
 		} else if len(ips) == 0 {
 			return nil, dns.ErrEmptyResponse
 		}
-		addr = net.IPAddress(ips[0])
+		addr = xnet.IPAddress(ips[0])
 	}
 
-	dst := net.Destination{
-		Address: addr,
-		Port:    net.Port(portNum),
-		Network: net.Network_UDP,
+	dst := xnet.Destination{
+		Address:	addr,
+		Port:		xnet.Port(portNum),
+		Network:	xnet.Network_UDP,
 	}
 
 	return &netEndpoint{
@@ -94,7 +96,7 @@ func (bind *netBind) Open(uport uint16) ([]conn.ReceiveFunc, uint16, error) {
 		}
 		r.waiter.Add(1)
 		bind.readQueue <- r
-		r.waiter.Wait() // wait read goroutine done, or we will miss the result
+		r.waiter.Wait()	// wait read goroutine done, or we will miss the result
 		sizes[0], eps[0] = r.bytes, r.endpoint
 		return 1, r.err
 	}
@@ -121,9 +123,9 @@ func (bind *netBind) Close() error {
 type netBindClient struct {
 	netBind
 
-	ctx      context.Context
-	dialer   internet.Dialer
-	reserved []byte
+	ctx		context.Context
+	dialer		internet.Dialer
+	reserved	[]byte
 }
 
 func (bind *netBindClient) connectTo(endpoint *netEndpoint) error {
@@ -151,7 +153,7 @@ func (bind *netBindClient) connectTo(endpoint *netEndpoint) error {
 			v.endpoint = endpoint
 			v.err = err
 			v.waiter.Done()
-			if err != nil {
+			if err != nil && errors.Is(err, io.EOF) {
 				endpoint.conn = nil
 				return
 			}
@@ -213,11 +215,11 @@ func (bind *netBindServer) Send(buff [][]byte, endpoint conn.Endpoint) error {
 }
 
 type netEndpoint struct {
-	dst  net.Destination
-	conn net.Conn
+	dst	xnet.Destination
+	conn	net.Conn
 }
 
-func (netEndpoint) ClearSrc() {}
+func (netEndpoint) ClearSrc()	{}
 
 func (e netEndpoint) DstIP() netip.Addr {
 	return netip.Addr{}
@@ -246,7 +248,7 @@ func (e netEndpoint) SrcToString() string {
 	return ""
 }
 
-func toNetIpAddr(addr net.Address) netip.Addr {
+func toNetIpAddr(addr xnet.Address) netip.Addr {
 	if addr.Family().IsIPv4() {
 		ip := addr.IP()
 		return netip.AddrFrom4([4]byte{ip[0], ip[1], ip[2], ip[3]})

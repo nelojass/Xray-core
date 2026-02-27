@@ -7,23 +7,23 @@ import (
 	"sync"
 	"time"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/buf"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/log"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/protocol"
-	"github.com/xtls/xray-core/common/session"
-	"github.com/xtls/xray-core/common/signal"
-	"github.com/xtls/xray-core/common/task"
-	"github.com/xtls/xray-core/common/uuid"
-	"github.com/xtls/xray-core/core"
-	feature_inbound "github.com/xtls/xray-core/features/inbound"
-	"github.com/xtls/xray-core/features/policy"
-	"github.com/xtls/xray-core/features/routing"
-	"github.com/xtls/xray-core/proxy/vmess"
-	"github.com/xtls/xray-core/proxy/vmess/encoding"
-	"github.com/xtls/xray-core/transport/internet/stat"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/buf"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/log"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/session"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/signal"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/task"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/uuid"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
+	feature_inbound "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/inbound"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/policy"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/routing"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vmess"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vmess/encoding"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/stat"
 )
 
 type userByEmail struct {
@@ -106,6 +106,7 @@ type Handler struct {
 	inboundHandlerManager feature_inbound.Manager
 	clients               *vmess.TimedUserValidator
 	usersByEmail          *userByEmail
+	detours               *DetourConfig
 	sessionHistory        *encoding.SessionHistory
 }
 
@@ -116,6 +117,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 		policyManager:         v.GetFeature(policy.ManagerType()).(policy.Manager),
 		inboundHandlerManager: v.GetFeature(feature_inbound.ManagerType()).(feature_inbound.Manager),
 		clients:               vmess.NewTimedUserValidator(),
+		detours:               config.Detour,
 		usersByEmail:          newUserByEmail(config.GetDefaultValue()),
 		sessionHistory:        encoding.NewSessionHistory(),
 	}
@@ -229,7 +231,10 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection s
 		return errors.New("unable to set read deadline").Base(err).AtWarning()
 	}
 
-	iConn := stat.TryUnwrapStatsConn(connection)
+	iConn := connection
+	if statConn, ok := iConn.(*stat.CounterConnection); ok {
+		iConn = statConn.Connection
+	}
 	_, isDrain := iConn.(*net.TCPConn)
 	if !isDrain {
 		_, isDrain = iConn.(*net.UnixConn)
@@ -318,8 +323,38 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection s
 	return nil
 }
 
-// Stub command generator
 func (h *Handler) generateCommand(ctx context.Context, request *protocol.RequestHeader) protocol.ResponseCommand {
+	if h.detours != nil {
+		tag := h.detours.To
+		if h.inboundHandlerManager != nil {
+			handler, err := h.inboundHandlerManager.GetHandler(ctx, tag)
+			if err != nil {
+				errors.LogWarningInner(ctx, err, "failed to get detour handler: ", tag)
+				return nil
+			}
+			proxyHandler, port, availableMin := handler.GetRandomInboundProxy()
+			inboundHandler, ok := proxyHandler.(*Handler)
+			if ok && inboundHandler != nil {
+				if availableMin > 255 {
+					availableMin = 255
+				}
+
+				errors.LogDebug(ctx, "pick detour handler for port ", port, " for ", availableMin, " minutes.")
+				user := inboundHandler.GetOrGenerateUser(request.User.Email)
+				if user == nil {
+					return nil
+				}
+				account := user.Account.(*vmess.MemoryAccount)
+				return &protocol.CommandSwitchAccount{
+					Port:     port,
+					ID:       account.ID.UUID(),
+					Level:    user.Level,
+					ValidMin: byte(availableMin),
+				}
+			}
+		}
+	}
+
 	return nil
 }
 

@@ -3,8 +3,9 @@ package protocol
 import (
 	"runtime"
 
-	"github.com/xtls/xray-core/common/bitmask"
-	"github.com/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/bitmask"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/uuid"
 	"golang.org/x/sys/cpu"
 )
 
@@ -15,12 +16,11 @@ const (
 	RequestCommandTCP = RequestCommand(0x01)
 	RequestCommandUDP = RequestCommand(0x02)
 	RequestCommandMux = RequestCommand(0x03)
-	RequestCommandRvs = RequestCommand(0x04)
 )
 
 func (c RequestCommand) TransferType() TransferType {
 	switch c {
-	case RequestCommandTCP, RequestCommandMux, RequestCommandRvs:
+	case RequestCommandTCP, RequestCommandMux:
 		return TransferTypeStream
 	case RequestCommandUDP:
 		return TransferTypePacket
@@ -50,6 +50,7 @@ type RequestHeader struct {
 	Port     net.Port
 	Address  net.Address
 	User     *MemoryUser
+	ClientId uint64
 }
 
 func (h *RequestHeader) Destination() net.Destination {
@@ -70,10 +71,18 @@ type ResponseHeader struct {
 	Command ResponseCommand
 }
 
+type CommandSwitchAccount struct {
+	Host     net.Address
+	Port     net.Port
+	ID       uuid.UUID
+	Level    uint32
+	ValidMin byte
+}
+
 var (
 	// Keep in sync with crypto/tls/cipher_suites.go.
 	hasGCMAsmAMD64 = cpu.X86.HasAES && cpu.X86.HasPCLMULQDQ && cpu.X86.HasSSE41 && cpu.X86.HasSSSE3
-	hasGCMAsmARM64 = (cpu.ARM64.HasAES && cpu.ARM64.HasPMULL) || (runtime.GOOS == "darwin" && runtime.GOARCH == "arm64")
+	hasGCMAsmARM64 = cpu.ARM64.HasAES && cpu.ARM64.HasPMULL
 	hasGCMAsmS390X = cpu.S390X.HasAES && cpu.S390X.HasAESCTR && cpu.S390X.HasGHASH
 	hasGCMAsmPPC64 = runtime.GOARCH == "ppc64" || runtime.GOARCH == "ppc64le"
 

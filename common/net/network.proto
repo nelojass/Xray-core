@@ -15,4 +15,4 @@ enum Network {
 }
 
 // NetworkList is a list of Networks.
-message NetworkList { repeated Network network = 1; }
+message NetworkList {repeated Network network = 1;}

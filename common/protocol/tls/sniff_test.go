@@ -3,7 +3,7 @@ package tls_test
 import (
 	"testing"
 
-	. "github.com/xtls/xray-core/common/protocol/tls"
+	. "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol/tls"
 )
 
 func TestTLSHeaders(t *testing.T) {

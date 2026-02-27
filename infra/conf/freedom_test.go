@@ -3,11 +3,11 @@ package conf_test
 import (
 	"testing"
 
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/protocol"
-	. "github.com/xtls/xray-core/infra/conf"
-	"github.com/xtls/xray-core/proxy/freedom"
-	"github.com/xtls/xray-core/transport/internet"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol"
+	. "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/infra/conf"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/freedom"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet"
 )
 
 func TestFreedomConfig(t *testing.T) {

@@ -3,7 +3,7 @@ package protocol
 import (
 	"time"
 
-	"github.com/xtls/xray-core/common/dice"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/dice"
 )
 
 type Timestamp int64

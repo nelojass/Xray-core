@@ -8,9 +8,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/xtls/xray-core/common/dice"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/protocol"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/dice"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol"
 )
 
 // Validator stores valid Shadowsocks users.
@@ -140,6 +140,7 @@ func (v *Validator) Get(bs []byte, command protocol.RequestCommand) (u *protocol
 
 			if matchErr == nil {
 				u = user
+				err = account.CheckIV(iv)
 				return
 			}
 		} else {

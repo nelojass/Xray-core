@@ -4,7 +4,7 @@ import (
 	"crypto/cipher"
 	"testing"
 
-	. "github.com/xtls/xray-core/common/crypto"
+	. "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/crypto"
 )
 
 const benchSize = 1024 * 1024

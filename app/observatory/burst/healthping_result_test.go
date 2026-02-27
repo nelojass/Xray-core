@@ -2,11 +2,11 @@ package burst_test
 
 import (
 	"math"
-	reflect "reflect"
+	"reflect"
 	"testing"
 	"time"
 
-	"github.com/xtls/xray-core/app/observatory/burst"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/observatory/burst"
 )
 
 func TestHealthPingResults(t *testing.T) {

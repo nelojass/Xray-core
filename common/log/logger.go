@@ -6,9 +6,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/xtls/xray-core/common/platform"
-	"github.com/xtls/xray-core/common/signal/done"
-	"github.com/xtls/xray-core/common/signal/semaphore"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/platform"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/signal/done"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/signal/semaphore"
 )
 
 // Writer is the interface for writing logs.

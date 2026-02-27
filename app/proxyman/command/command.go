@@ -3,15 +3,15 @@ package command
 import (
 	"context"
 
-	"github.com/xtls/xray-core/app/commander"
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/protocol"
-	"github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/features/inbound"
-	"github.com/xtls/xray-core/features/outbound"
-	"github.com/xtls/xray-core/proxy"
-	grpc "google.golang.org/grpc"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/commander"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/inbound"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/outbound"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy"
+	"google.golang.org/grpc"
 )
 
 // InboundOperation is the interface for operations that applies to inbound handlers.

@@ -5,16 +5,17 @@ import (
 	_ "embed"
 	"encoding/base64"
 	"io"
+	gonet "net"
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/transport/internet"
-	"github.com/xtls/xray-core/transport/internet/browser_dialer"
-	"github.com/xtls/xray-core/transport/internet/stat"
-	"github.com/xtls/xray-core/transport/internet/tls"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/browser_dialer"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/stat"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/tls"
 )
 
 // Dial dials a WebSocket connection to the given destination.
@@ -63,7 +64,7 @@ func dialWebSocket(ctx context.Context, dest net.Destination, streamSettings *in
 		tlsConfig := tConfig.GetTLSConfig(tls.WithDestination(dest), tls.WithNextProto("http/1.1"))
 		dialer.TLSClientConfig = tlsConfig
 		if fingerprint := tls.GetFingerprint(tConfig.Fingerprint); fingerprint != nil {
-			dialer.NetDialTLSContext = func(_ context.Context, _, addr string) (net.Conn, error) {
+			dialer.NetDialTLSContext = func(_ context.Context, _, addr string) (gonet.Conn, error) {
 				// Like the NetDial in the dialer
 				pconn, err := internet.DialSystem(ctx, dest, streamSettings.SocketSettings)
 				if err != nil {

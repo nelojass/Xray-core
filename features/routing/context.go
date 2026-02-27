@@ -1,7 +1,7 @@
 package routing
 
 import (
-	"github.com/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
 )
 
 // Context is a feature to store connection information for routing.
@@ -49,4 +49,7 @@ type Context interface {
 
 	// GetSkipDNSResolve returns a flag switch for weather skip dns resolve during route pick.
 	GetSkipDNSResolve() bool
+
+	// GetFilterRuleTags TODO: edit for x to filter rule tags
+	GetFilterRuleTags() []string
 }

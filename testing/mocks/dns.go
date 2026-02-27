@@ -9,13 +9,13 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	dns "github.com/xtls/xray-core/features/dns"
+	dns "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/dns"
 )
 
 // DNSClient is a mock of Client interface
 type DNSClient struct {
-	ctrl     *gomock.Controller
-	recorder *DNSClientMockRecorder
+	ctrl		*gomock.Controller
+	recorder	*DNSClientMockRecorder
 }
 
 // DNSClientMockRecorder is the mock recorder for DNSClient

@@ -8,30 +8,30 @@ import (
 	"time"
 
 	"github.com/cloudflare/circl/sign/mldsa/mldsa65"
-	"github.com/xtls/reality"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/transport/internet"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/reality"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet"
 )
 
 func (c *Config) GetREALITYConfig() *reality.Config {
 	var dialer net.Dialer
 	config := &reality.Config{
-		DialContext: dialer.DialContext,
+		DialContext:	dialer.DialContext,
 
-		Show: c.Show,
-		Type: c.Type,
-		Dest: c.Dest,
-		Xver: byte(c.Xver),
+		Show:	c.Show,
+		Type:	c.Type,
+		Dest:	c.Dest,
+		Xver:	byte(c.Xver),
 
-		PrivateKey:   c.PrivateKey,
-		MinClientVer: c.MinClientVer,
-		MaxClientVer: c.MaxClientVer,
-		MaxTimeDiff:  time.Duration(c.MaxTimeDiff) * time.Millisecond,
+		PrivateKey:	c.PrivateKey,
+		MinClientVer:	c.MinClientVer,
+		MaxClientVer:	c.MaxClientVer,
+		MaxTimeDiff:	time.Duration(c.MaxTimeDiff) * time.Millisecond,
 
-		NextProtos:             nil, // should be nil
-		SessionTicketsDisabled: true,
+		NextProtos:		nil,	// should be nil
+		SessionTicketsDisabled:	true,
 
-		KeyLogWriter: KeyLogWriterFromConfig(c),
+		KeyLogWriter:	KeyLogWriterFromConfig(c),
 	}
 	if c.Mldsa65Seed != nil {
 		_, key := mldsa65.NewKeyFromSeed((*[32]byte)(c.Mldsa65Seed))

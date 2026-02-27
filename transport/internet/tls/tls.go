@@ -8,8 +8,8 @@ import (
 	"time"
 
 	utls "github.com/refraction-networking/utls"
-	"github.com/xtls/xray-core/common/buf"
-	"github.com/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/buf"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
 )
 
 type Interface interface {
@@ -124,10 +124,6 @@ func (c *UConn) NegotiatedProtocol() string {
 func UClient(c net.Conn, config *tls.Config, fingerprint *utls.ClientHelloID) net.Conn {
 	utlsConn := utls.UClient(c, copyConfig(config), *fingerprint)
 	return &UConn{UConn: utlsConn}
-}
-
-func GeneraticUClient(c net.Conn, config *tls.Config) *utls.UConn {
-	return utls.UClient(c, copyConfig(config), utls.HelloChrome_Auto)
 }
 
 func copyConfig(c *tls.Config) *utls.Config {

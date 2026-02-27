@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/xtls/xray-core/app/stats"
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/features/stats"
+	. "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/stats"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/stats"
 )
 
 func TestInterface(t *testing.T) {
@@ -50,7 +50,8 @@ func TestStatsChannelRunnable(t *testing.T) {
 		t.Fatalf("unexpected running channel: test.channel.%d", 1)
 	}
 
-	select { // Check all subscribers in closed channel are closed
+	select {
+	// Check all subscribers in closed channel are closed
 	case _, ok := <-s1:
 		if ok {
 			t.Fatalf("unexpected non-closed subscriber in channel: test.channel.%d", 1)

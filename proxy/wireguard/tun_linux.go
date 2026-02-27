@@ -15,8 +15,8 @@ import (
 
 	"github.com/sagernet/sing/common/control"
 	"github.com/vishvananda/netlink"
-	"github.com/xtls/xray-core/common/errors"
-	wgtun "golang.zx2c4.com/wireguard/tun"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	wgtun "v12w.x34y.com/flyfishLib/forkHub/golang.zx2c4.com/wireguard/tun"
 )
 
 type deviceNet struct {

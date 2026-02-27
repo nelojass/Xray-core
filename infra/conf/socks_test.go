@@ -3,11 +3,11 @@ package conf_test
 import (
 	"testing"
 
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/protocol"
-	"github.com/xtls/xray-core/common/serial"
-	. "github.com/xtls/xray-core/infra/conf"
-	"github.com/xtls/xray-core/proxy/socks"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/serial"
+	. "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/infra/conf"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/socks"
 )
 
 func TestSocksInboundConfig(t *testing.T) {
@@ -65,46 +65,23 @@ func TestSocksOutboundConfig(t *testing.T) {
 			}`,
 			Parser: loadJSON(creator),
 			Output: &socks.ClientConfig{
-				Server: &protocol.ServerEndpoint{
-					Address: &net.IPOrDomain{
-						Address: &net.IPOrDomain_Ip{
-							Ip: []byte{127, 0, 0, 1},
+				Server: []*protocol.ServerEndpoint{
+					{
+						Address: &net.IPOrDomain{
+							Address: &net.IPOrDomain_Ip{
+								Ip: []byte{127, 0, 0, 1},
+							},
 						},
-					},
-					Port: 1234,
-					User: &protocol.User{
-						Email: "test@email.com",
-						Account: serial.ToTypedMessage(&socks.Account{
-							Username: "test user",
-							Password: "test pass",
-						}),
-					},
-				},
-			},
-		},
-		{
-			Input: `{
-				"address": "127.0.0.1",
-				"port": 1234,
-				"user": "test user",
-				"pass": "test pass",
-				"email": "test@email.com"
-			}`,
-			Parser: loadJSON(creator),
-			Output: &socks.ClientConfig{
-				Server: &protocol.ServerEndpoint{
-					Address: &net.IPOrDomain{
-						Address: &net.IPOrDomain_Ip{
-							Ip: []byte{127, 0, 0, 1},
+						Port: 1234,
+						User: []*protocol.User{
+							{
+								Email: "test@email.com",
+								Account: serial.ToTypedMessage(&socks.Account{
+									Username: "test user",
+									Password: "test pass",
+								}),
+							},
 						},
-					},
-					Port: 1234,
-					User: &protocol.User{
-						Email: "test@email.com",
-						Account: serial.ToTypedMessage(&socks.Account{
-							Username: "test user",
-							Password: "test pass",
-						}),
 					},
 				},
 			},

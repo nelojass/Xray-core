@@ -6,24 +6,24 @@ import (
 	"strings"
 	"time"
 
-	goreality "github.com/xtls/reality"
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/transport/internet"
-	"github.com/xtls/xray-core/transport/internet/reality"
-	"github.com/xtls/xray-core/transport/internet/stat"
-	"github.com/xtls/xray-core/transport/internet/tls"
+	goreality "v12w.x34y.com/flyfishLib/forkHub/xtls/reality"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/reality"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/stat"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/tls"
 )
 
 // Listener is an internet.Listener that listens for TCP connections.
 type Listener struct {
-	listener      net.Listener
-	tlsConfig     *gotls.Config
-	realityConfig *goreality.Config
-	authConfig    internet.ConnectionAuthenticator
-	config        *Config
-	addConn       internet.ConnHandler
+	listener	net.Listener
+	tlsConfig	*gotls.Config
+	realityConfig	*goreality.Config
+	authConfig	internet.ConnectionAuthenticator
+	config		*Config
+	addConn		internet.ConnHandler
 }
 
 // ListenTCP creates a new Listener based on configurations.
@@ -41,13 +41,13 @@ func ListenTCP(ctx context.Context, address net.Address, port net.Port, streamSe
 	}
 	var listener net.Listener
 	var err error
-	if port == net.Port(0) { // unix
+	if port == net.Port(0) {	// unix
 		if !address.Family().IsDomain() {
 			return nil, errors.New("invalid unix listen: ", address).AtError()
 		}
 		listener, err = internet.ListenSystem(ctx, &net.UnixAddr{
-			Name: address.Domain(),
-			Net:  "unix",
+			Name:	address.Domain(),
+			Net:	"unix",
 		}, streamSettings.SocketSettings)
 		if err != nil {
 			return nil, errors.New("failed to listen Unix Domain Socket on ", address).Base(err)
@@ -55,8 +55,8 @@ func ListenTCP(ctx context.Context, address net.Address, port net.Port, streamSe
 		errors.LogInfo(ctx, "listening Unix Domain Socket on ", address)
 	} else {
 		listener, err = internet.ListenSystem(ctx, &net.TCPAddr{
-			IP:   address.IP(),
-			Port: int(port),
+			IP:	address.IP(),
+			Port:	int(port),
 		}, streamSettings.SocketSettings)
 		if err != nil {
 			return nil, errors.New("failed to listen TCP on ", address, ":", port).Base(err)

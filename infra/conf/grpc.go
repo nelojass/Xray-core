@@ -1,7 +1,7 @@
 package conf
 
 import (
-	"github.com/xtls/xray-core/transport/internet/grpc"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/grpc"
 	"google.golang.org/protobuf/proto"
 )
 

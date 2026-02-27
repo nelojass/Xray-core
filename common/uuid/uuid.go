@@ -6,8 +6,8 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
 )
 
 var byteGroups = []int{8, 4, 4, 4, 12}
@@ -49,7 +49,7 @@ func New() UUID {
 	var uuid UUID
 	common.Must2(rand.Read(uuid.Bytes()))
 	uuid[6] = (uuid[6] & 0x0f) | (4 << 4)
-	uuid[8] = (uuid[8]&(0xff>>2) | (0x02 << 6))
+	uuid[8] = uuid[8]&(0xff>>2) | (0x02 << 6)
 	return uuid
 }
 
@@ -77,7 +77,7 @@ func ParseString(str string) (UUID, error) {
 		h.Write(text)
 		u := h.Sum(nil)[:16]
 		u[6] = (u[6] & 0x0f) | (5 << 4)
-		u[8] = (u[8]&(0xff>>2) | (0x02 << 6))
+		u[8] = u[8]&(0xff>>2) | (0x02 << 6)
 		copy(uuid[:], u)
 		return uuid, nil
 	}
@@ -85,12 +85,8 @@ func ParseString(str string) (UUID, error) {
 	b := uuid.Bytes()
 
 	for _, byteGroup := range byteGroups {
-		if len(text) > 0 && text[0] == '-' {
+		if text[0] == '-' {
 			text = text[1:]
-		}
-
-		if len(text) < byteGroup {
-			return uuid, errors.New("invalid UUID: ", str)
 		}
 
 		if _, err := hex.Decode(b[:byteGroup/2], text[:byteGroup]); err != nil {

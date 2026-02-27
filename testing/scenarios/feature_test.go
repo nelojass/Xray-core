@@ -8,30 +8,30 @@ import (
 	"testing"
 	"time"
 
-	"github.com/xtls/xray-core/app/dispatcher"
-	"github.com/xtls/xray-core/app/log"
-	"github.com/xtls/xray-core/app/proxyman"
-	_ "github.com/xtls/xray-core/app/proxyman/inbound"
-	_ "github.com/xtls/xray-core/app/proxyman/outbound"
-	"github.com/xtls/xray-core/app/router"
-	"github.com/xtls/xray-core/common"
-	clog "github.com/xtls/xray-core/common/log"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/protocol"
-	"github.com/xtls/xray-core/common/serial"
-	"github.com/xtls/xray-core/common/uuid"
-	core "github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/proxy/blackhole"
-	"github.com/xtls/xray-core/proxy/dokodemo"
-	"github.com/xtls/xray-core/proxy/freedom"
-	v2http "github.com/xtls/xray-core/proxy/http"
-	"github.com/xtls/xray-core/proxy/socks"
-	"github.com/xtls/xray-core/proxy/vmess"
-	"github.com/xtls/xray-core/proxy/vmess/inbound"
-	"github.com/xtls/xray-core/proxy/vmess/outbound"
-	"github.com/xtls/xray-core/testing/servers/tcp"
-	"github.com/xtls/xray-core/testing/servers/udp"
-	"github.com/xtls/xray-core/transport/internet"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/dispatcher"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/log"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/proxyman"
+	_ "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/proxyman/inbound"
+	_ "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/proxyman/outbound"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/router"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	clog "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/log"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/serial"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/uuid"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/blackhole"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/dokodemo"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/freedom"
+	v2http "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/http"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/socks"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vmess"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vmess/inbound"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vmess/outbound"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/testing/servers/tcp"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/testing/servers/udp"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet"
 	xproxy "golang.org/x/net/proxy"
 )
 
@@ -170,13 +170,17 @@ func TestProxy(t *testing.T) {
 		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
-					Receiver: &protocol.ServerEndpoint{
-						Address: net.NewIPOrDomain(net.LocalHostIP),
-						Port:    uint32(serverPort),
-						User:    &protocol.User{
-							Account: serial.ToTypedMessage(&vmess.Account{
-								Id: serverUserID.String(),
-							}),
+					Receiver: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: serial.ToTypedMessage(&vmess.Account{
+										Id: serverUserID.String(),
+									}),
+								},
+							},
 						},
 					},
 				}),
@@ -189,13 +193,17 @@ func TestProxy(t *testing.T) {
 			{
 				Tag: "proxy",
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
-					Receiver: &protocol.ServerEndpoint{
-						Address: net.NewIPOrDomain(net.LocalHostIP),
-						Port:    uint32(proxyPort),
-						User:    &protocol.User{
-							Account: serial.ToTypedMessage(&vmess.Account{
-								Id: proxyUserID.String(),
-							}),
+					Receiver: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(proxyPort),
+							User: []*protocol.User{
+								{
+									Account: serial.ToTypedMessage(&vmess.Account{
+										Id: proxyUserID.String(),
+									}),
+								},
+							},
 						},
 					},
 				}),
@@ -300,13 +308,17 @@ func TestProxyOverKCP(t *testing.T) {
 		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
-					Receiver: &protocol.ServerEndpoint{
-						Address: net.NewIPOrDomain(net.LocalHostIP),
-						Port:    uint32(serverPort),
-						User:    &protocol.User{
-							Account: serial.ToTypedMessage(&vmess.Account{
-								Id: serverUserID.String(),
-							}),
+					Receiver: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: serial.ToTypedMessage(&vmess.Account{
+										Id: serverUserID.String(),
+									}),
+								},
+							},
 						},
 					},
 				}),
@@ -322,13 +334,17 @@ func TestProxyOverKCP(t *testing.T) {
 			{
 				Tag: "proxy",
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
-					Receiver: &protocol.ServerEndpoint{
-						Address: net.NewIPOrDomain(net.LocalHostIP),
-						Port:    uint32(proxyPort),
-						User:    &protocol.User{
-							Account: serial.ToTypedMessage(&vmess.Account{
-								Id: proxyUserID.String(),
-							}),
+					Receiver: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(proxyPort),
+							User: []*protocol.User{
+								{
+									Account: serial.ToTypedMessage(&vmess.Account{
+										Id: proxyUserID.String(),
+									}),
+								},
+							},
 						},
 					},
 				}),
@@ -669,16 +685,20 @@ func TestDialXray(t *testing.T) {
 		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
-					Receiver: &protocol.ServerEndpoint{
-						Address: net.NewIPOrDomain(net.LocalHostIP),
-						Port:    uint32(serverPort),
-						User: &protocol.User{
-							Account: serial.ToTypedMessage(&vmess.Account{
-								Id: userID.String(),
-								SecuritySettings: &protocol.SecurityConfig{
-									Type: protocol.SecurityType_AES128_GCM,
+					Receiver: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: serial.ToTypedMessage(&vmess.Account{
+										Id: userID.String(),
+										SecuritySettings: &protocol.SecurityConfig{
+											Type: protocol.SecurityType_AES128_GCM,
+										},
+									}),
 								},
-							}),
+							},
 						},
 					},
 				}),

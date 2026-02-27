@@ -6,26 +6,26 @@ import (
 	"testing"
 	"time"
 
-	"github.com/xtls/xray-core/app/log"
-	"github.com/xtls/xray-core/app/proxyman"
-	"github.com/xtls/xray-core/common"
-	clog "github.com/xtls/xray-core/common/log"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/protocol"
-	"github.com/xtls/xray-core/common/protocol/tls/cert"
-	"github.com/xtls/xray-core/common/serial"
-	"github.com/xtls/xray-core/common/uuid"
-	core "github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/proxy/dokodemo"
-	"github.com/xtls/xray-core/proxy/freedom"
-	"github.com/xtls/xray-core/proxy/vless"
-	"github.com/xtls/xray-core/proxy/vless/inbound"
-	"github.com/xtls/xray-core/proxy/vless/outbound"
-	"github.com/xtls/xray-core/testing/servers/tcp"
-	"github.com/xtls/xray-core/transport/internet"
-	"github.com/xtls/xray-core/transport/internet/reality"
-	transtcp "github.com/xtls/xray-core/transport/internet/tcp"
-	"github.com/xtls/xray-core/transport/internet/tls"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/log"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/proxyman"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	clog "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/log"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol/tls/cert"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/serial"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/uuid"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/dokodemo"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/freedom"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vless"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vless/inbound"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vless/outbound"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/testing/servers/tcp"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/reality"
+	transtcp "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/tcp"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/tls"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -94,13 +94,17 @@ func TestVless(t *testing.T) {
 		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
-					Vnext: &protocol.ServerEndpoint{
-						Address: net.NewIPOrDomain(net.LocalHostIP),
-						Port:    uint32(serverPort),
-						User: &protocol.User{
-							Account: serial.ToTypedMessage(&vless.Account{
-								Id: userID.String(),
-							}),
+					Vnext: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: serial.ToTypedMessage(&vless.Account{
+										Id: userID.String(),
+									}),
+								},
+							},
 						},
 					},
 				}),
@@ -129,8 +133,6 @@ func TestVlessTls(t *testing.T) {
 	common.Must(err)
 	defer tcpServer.Close()
 
-	ct, ctHash := cert.MustGenerate(nil, cert.CommonName("localhost"))
-
 	userID := protocol.NewID(uuid.New())
 	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
@@ -150,7 +152,7 @@ func TestVlessTls(t *testing.T) {
 						SecurityType: serial.GetMessageType(&tls.Config{}),
 						SecuritySettings: []*serial.TypedMessage{
 							serial.ToTypedMessage(&tls.Config{
-								Certificate: []*tls.Certificate{tls.ParseCertificate(ct)},
+								Certificate: []*tls.Certificate{tls.ParseCertificate(cert.MustGenerate(nil))},
 							}),
 						},
 					},
@@ -197,13 +199,17 @@ func TestVlessTls(t *testing.T) {
 		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
-					Vnext: &protocol.ServerEndpoint{
-						Address: net.NewIPOrDomain(net.LocalHostIP),
-						Port:    uint32(serverPort),
-						User: &protocol.User{
-							Account: serial.ToTypedMessage(&vless.Account{
-								Id: userID.String(),
-							}),
+					Vnext: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: serial.ToTypedMessage(&vless.Account{
+										Id: userID.String(),
+									}),
+								},
+							},
 						},
 					},
 				}),
@@ -219,7 +225,7 @@ func TestVlessTls(t *testing.T) {
 						SecurityType: serial.GetMessageType(&tls.Config{}),
 						SecuritySettings: []*serial.TypedMessage{
 							serial.ToTypedMessage(&tls.Config{
-								PinnedPeerCertSha256: [][]byte{ctHash[:]},
+								AllowInsecure: true,
 							}),
 						},
 					},
@@ -249,8 +255,6 @@ func TestVlessXtlsVision(t *testing.T) {
 	common.Must(err)
 	defer tcpServer.Close()
 
-	ct, ctHash := cert.MustGenerate(nil, cert.CommonName("localhost"))
-
 	userID := protocol.NewID(uuid.New())
 	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
@@ -270,7 +274,7 @@ func TestVlessXtlsVision(t *testing.T) {
 						SecurityType: serial.GetMessageType(&tls.Config{}),
 						SecuritySettings: []*serial.TypedMessage{
 							serial.ToTypedMessage(&tls.Config{
-								Certificate: []*tls.Certificate{tls.ParseCertificate(ct)},
+								Certificate: []*tls.Certificate{tls.ParseCertificate(cert.MustGenerate(nil))},
 							}),
 						},
 					},
@@ -318,14 +322,18 @@ func TestVlessXtlsVision(t *testing.T) {
 		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
-					Vnext: &protocol.ServerEndpoint{
-						Address: net.NewIPOrDomain(net.LocalHostIP),
-						Port:    uint32(serverPort),
-						User: &protocol.User{
-							Account: serial.ToTypedMessage(&vless.Account{
-								Id:   userID.String(),
-								Flow: vless.XRV,
-							}),
+					Vnext: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: serial.ToTypedMessage(&vless.Account{
+										Id:   userID.String(),
+										Flow: vless.XRV,
+									}),
+								},
+							},
 						},
 					},
 				}),
@@ -341,7 +349,7 @@ func TestVlessXtlsVision(t *testing.T) {
 						SecurityType: serial.GetMessageType(&tls.Config{}),
 						SecuritySettings: []*serial.TypedMessage{
 							serial.ToTypedMessage(&tls.Config{
-								PinnedPeerCertSha256: [][]byte{ctHash[:]},
+								AllowInsecure: true,
 							}),
 						},
 					},
@@ -448,14 +456,18 @@ func TestVlessXtlsVisionReality(t *testing.T) {
 		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
-					Vnext: &protocol.ServerEndpoint{
-						Address: net.NewIPOrDomain(net.LocalHostIP),
-						Port:    uint32(serverPort),
-						User: &protocol.User{
-							Account: serial.ToTypedMessage(&vless.Account{
-								Id:   userID.String(),
-								Flow: vless.XRV,
-							}),
+					Vnext: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: serial.ToTypedMessage(&vless.Account{
+										Id:   userID.String(),
+										Flow: vless.XRV,
+									}),
+								},
+							},
 						},
 					},
 				}),

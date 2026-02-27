@@ -5,14 +5,14 @@ import (
 	"io"
 	"sync/atomic"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/buf"
-	"github.com/xtls/xray-core/common/dice"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/transport/internet"
-	"github.com/xtls/xray-core/transport/internet/stat"
-	"github.com/xtls/xray-core/transport/internet/tls"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/buf"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/dice"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/stat"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/tls"
 )
 
 var globalConv = uint32(dice.RollUint16())
@@ -54,32 +54,32 @@ func DialKCP(ctx context.Context, dest net.Destination, streamSettings *internet
 		return nil, errors.New("failed to dial to dest: ", err).AtWarning().Base(err)
 	}
 
-	if streamSettings.UdpmaskManager != nil {
-		wrapper, ok := rawConn.(*internet.PacketConnWrapper)
-		if !ok {
-			rawConn.Close()
-			return nil, errors.New("raw is not PacketConnWrapper")
-		}
-
-		raw := wrapper.Conn
-
-		wrapper.Conn, err = streamSettings.UdpmaskManager.WrapPacketConnClient(raw)
-		if err != nil {
-			raw.Close()
-			return nil, errors.New("mask err").Base(err)
-		}
-	}
-
 	kcpSettings := streamSettings.ProtocolSettings.(*Config)
 
-	reader := &KCPPacketReader{}
+	header, err := kcpSettings.GetPackerHeader()
+	if err != nil {
+		return nil, errors.New("failed to create packet header").Base(err)
+	}
+	security, err := kcpSettings.GetSecurity()
+	if err != nil {
+		return nil, errors.New("failed to create security").Base(err)
+	}
+	reader := &KCPPacketReader{
+		Header:   header,
+		Security: security,
+	}
+	writer := &KCPPacketWriter{
+		Header:   header,
+		Security: security,
+		Writer:   rawConn,
+	}
 
 	conv := uint16(atomic.AddUint32(&globalConv, 1))
 	session := NewConnection(ConnMetadata{
 		LocalAddr:    rawConn.LocalAddr(),
 		RemoteAddr:   rawConn.RemoteAddr(),
 		Conversation: conv,
-	}, rawConn, rawConn, kcpSettings)
+	}, writer, rawConn, kcpSettings)
 
 	go fetchInput(ctx, rawConn, reader, session)
 

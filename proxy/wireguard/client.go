@@ -27,21 +27,21 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/buf"
-	"github.com/xtls/xray-core/common/dice"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/log"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/protocol"
-	"github.com/xtls/xray-core/common/session"
-	"github.com/xtls/xray-core/common/signal"
-	"github.com/xtls/xray-core/common/task"
-	"github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/features/dns"
-	"github.com/xtls/xray-core/features/policy"
-	"github.com/xtls/xray-core/transport"
-	"github.com/xtls/xray-core/transport/internet"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/buf"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/dice"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/log"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/session"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/signal"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/task"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/dns"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/policy"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet"
 )
 
 // Handler is an outbound connection that silently swallow the entire payload.
@@ -300,14 +300,14 @@ func (h *Handler) createIPCRequest() string {
 				errors.LogInfo(h.bind.ctx, "createIPCRequest use dialer dest ip: ", addr)
 			} else {
 				ips, _, err := h.dns.LookupIP(addr.Domain(), dns.IPOption{
-					IPv4Enable: h.conf.preferIP4(),
-					IPv6Enable: h.conf.preferIP6(),
+					IPv4Enable: h.hasIPv4 && h.conf.preferIP4(),
+					IPv6Enable: h.hasIPv6 && h.conf.preferIP6(),
 				})
 				{ // Resolve fallback
 					if (len(ips) == 0 || err != nil) && h.conf.hasFallback() {
 						ips, _, err = h.dns.LookupIP(addr.Domain(), dns.IPOption{
-							IPv4Enable: h.conf.fallbackIP4(),
-							IPv6Enable: h.conf.fallbackIP6(),
+							IPv4Enable: h.hasIPv4 && h.conf.fallbackIP4(),
+							IPv6Enable: h.hasIPv6 && h.conf.fallbackIP6(),
 						})
 					}
 				}

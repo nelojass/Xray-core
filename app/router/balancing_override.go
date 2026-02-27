@@ -1,9 +1,9 @@
 package router
 
 import (
-	sync "sync"
+	"sync"
 
-	"github.com/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
 )
 
 func (r *Router) OverrideBalancer(balancer string, target string) error {

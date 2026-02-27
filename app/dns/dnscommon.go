@@ -3,23 +3,20 @@ package dns
 import (
 	"context"
 	"encoding/binary"
-	"math"
 	"strings"
 	"time"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/log"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/session"
-	"github.com/xtls/xray-core/core"
-	dns_feature "github.com/xtls/xray-core/features/dns"
-
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/log"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/session"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
+	dns_feature "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/dns"
 	"golang.org/x/net/dns/dnsmessage"
 )
 
 // Fqdn normalizes domain make sure it ends with '.'
-// case-sensitive
 func Fqdn(domain string) string {
 	if len(domain) > 0 && strings.HasSuffix(domain, ".") {
 		return domain
@@ -41,14 +38,19 @@ type IPRecord struct {
 	RawHeader *dnsmessage.Header
 }
 
-func (r *IPRecord) getIPs() ([]net.IP, int32, error) {
+func (r *IPRecord) getIPs() ([]net.IP, uint32, error) {
 	if r == nil {
 		return nil, 0, errRecordNotFound
 	}
-
 	untilExpire := time.Until(r.Expire).Seconds()
-	ttl := int32(math.Ceil(untilExpire))
+	if untilExpire <= 0 {
+		return nil, 0, errRecordNotFound
+	}
 
+	ttl := uint32(untilExpire) + 1
+	if ttl == 1 {
+		r.Expire = time.Now().Add(time.Second) // To ensure that two consecutive requests get the same result
+	}
 	if r.RCode != dnsmessage.RCodeSuccess {
 		return nil, ttl, dns_feature.RCodeError(r.RCode)
 	}

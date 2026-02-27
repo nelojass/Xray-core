@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/protocol"
-	"github.com/xtls/xray-core/common/serial"
-	"github.com/xtls/xray-core/common/uuid"
-	"github.com/xtls/xray-core/proxy/vmess"
-	"github.com/xtls/xray-core/proxy/vmess/inbound"
-	"github.com/xtls/xray-core/proxy/vmess/outbound"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/serial"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/uuid"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vmess"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vmess/inbound"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vmess/outbound"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -46,6 +46,17 @@ func (a *VMessAccount) Build() *vmess.Account {
 	}
 }
 
+type VMessDetourConfig struct {
+	ToTag string `json:"to"`
+}
+
+// Build implements Buildable
+func (c *VMessDetourConfig) Build() *inbound.DetourConfig {
+	return &inbound.DetourConfig{
+		To: c.ToTag,
+	}
+}
+
 type VMessDefaultConfig struct {
 	Level byte `json:"level"`
 }
@@ -58,18 +69,21 @@ func (c *VMessDefaultConfig) Build() *inbound.DefaultConfig {
 }
 
 type VMessInboundConfig struct {
-	Users    []json.RawMessage   `json:"clients"`
-	Defaults *VMessDefaultConfig `json:"default"`
+	Users        []json.RawMessage   `json:"clients"`
+	Defaults     *VMessDefaultConfig `json:"default"`
+	DetourConfig *VMessDetourConfig  `json:"detour"`
 }
 
 // Build implements Buildable
 func (c *VMessInboundConfig) Build() (proto.Message, error) {
-	errors.PrintNonRemovalDeprecatedFeatureWarning("VMess (with no Forward Secrecy, etc.)", "VLESS Encryption")
-
 	config := &inbound.Config{}
 
 	if c.Defaults != nil {
 		config.Default = c.Defaults.Build()
+	}
+
+	if c.DetourConfig != nil {
+		config.Detour = c.DetourConfig.Build()
 	}
 
 	config.User = make([]*protocol.User, len(c.Users))
@@ -103,39 +117,23 @@ type VMessOutboundTarget struct {
 }
 
 type VMessOutboundConfig struct {
-	Address     *Address               `json:"address"`
-	Port        uint16                 `json:"port"`
-	Level       uint32                 `json:"level"`
-	Email       string                 `json:"email"`
-	ID          string                 `json:"id"`
-	Security    string                 `json:"security"`
-	Experiments string                 `json:"experiments"`
-	Receivers   []*VMessOutboundTarget `json:"vnext"`
+	Receivers []*VMessOutboundTarget `json:"vnext"`
 }
 
 // Build implements Buildable
 func (c *VMessOutboundConfig) Build() (proto.Message, error) {
-	errors.PrintNonRemovalDeprecatedFeatureWarning("VMess (with no Forward Secrecy, etc.)", "VLESS Encryption")
-
 	config := new(outbound.Config)
-	if c.Address != nil {
-		c.Receivers = []*VMessOutboundTarget{
-			{
-				Address: c.Address,
-				Port:    c.Port,
-				Users:   []json.RawMessage{{}},
-			},
-		}
+
+	if len(c.Receivers) == 0 {
+		return nil, errors.New("0 VMess receiver configured")
 	}
-	if len(c.Receivers) != 1 {
-		return nil, errors.New(`VMess settings: "vnext" should have one and only one member. Multiple endpoints in "vnext" should use multiple VMess outbounds and routing balancer instead`)
-	}
-	for _, rec := range c.Receivers {
-		if len(rec.Users) != 1 {
-			return nil, errors.New(`VMess vnext: "users" should have one and only one member. Multiple members in "users" should use multiple VMess outbounds and routing balancer instead`)
+	serverSpecs := make([]*protocol.ServerEndpoint, len(c.Receivers))
+	for idx, rec := range c.Receivers {
+		if len(rec.Users) == 0 {
+			return nil, errors.New("0 user configured for VMess outbound")
 		}
 		if rec.Address == nil {
-			return nil, errors.New(`VMess vnext: "address" is not set`)
+			return nil, errors.New("address is not set in VMess outbound config")
 		}
 		spec := &protocol.ServerEndpoint{
 			Address: rec.Address.Build(),
@@ -143,23 +141,12 @@ func (c *VMessOutboundConfig) Build() (proto.Message, error) {
 		}
 		for _, rawUser := range rec.Users {
 			user := new(protocol.User)
-			if c.Address != nil {
-				user.Level = c.Level
-				user.Email = c.Email
-			} else {
-				if err := json.Unmarshal(rawUser, user); err != nil {
-					return nil, errors.New("invalid VMess user").Base(err)
-				}
+			if err := json.Unmarshal(rawUser, user); err != nil {
+				return nil, errors.New("invalid VMess user").Base(err)
 			}
 			account := new(VMessAccount)
-			if c.Address != nil {
-				account.ID = c.ID
-				account.Security = c.Security
-				account.Experiments = c.Experiments
-			} else {
-				if err := json.Unmarshal(rawUser, account); err != nil {
-					return nil, errors.New("invalid VMess user").Base(err)
-				}
+			if err := json.Unmarshal(rawUser, account); err != nil {
+				return nil, errors.New("invalid VMess user").Base(err)
 			}
 
 			u, err := uuid.ParseString(account.ID)
@@ -169,11 +156,10 @@ func (c *VMessOutboundConfig) Build() (proto.Message, error) {
 			account.ID = u.String()
 
 			user.Account = serial.ToTypedMessage(account.Build())
-			spec.User = user
-			break
+			spec.User = append(spec.User, user)
 		}
-		config.Receiver = spec
-		break
+		serverSpecs[idx] = spec
 	}
+	config.Receiver = serverSpecs
 	return config, nil
 }

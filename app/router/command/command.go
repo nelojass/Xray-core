@@ -4,11 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/features/routing"
-	"github.com/xtls/xray-core/features/stats"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/routing"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/stats"
 	"google.golang.org/grpc"
 )
 
@@ -60,24 +60,9 @@ func (s *routingServer) AddRule(ctx context.Context, request *AddRuleRequest) (*
 	return nil, errors.New("unsupported router implementation")
 
 }
-
 func (s *routingServer) RemoveRule(ctx context.Context, request *RemoveRuleRequest) (*RemoveRuleResponse, error) {
 	if bo, ok := s.router.(routing.Router); ok {
 		return &RemoveRuleResponse{}, bo.RemoveRule(request.RuleTag)
-	}
-	return nil, errors.New("unsupported router implementation")
-}
-
-func (s *routingServer) ListRule(ctx context.Context, request *ListRuleRequest) (*ListRuleResponse, error) {
-	if bo, ok := s.router.(routing.Router); ok {
-		response := &ListRuleResponse{}
-		for _, v := range bo.ListRule() {
-			response.Rules = append(response.Rules, &ListRuleItem{
-				Tag:     v.GetOutboundTag(),
-				RuleTag: v.GetRuleTag(),
-			})
-		}
-		return response, nil
 	}
 	return nil, errors.New("unsupported router implementation")
 }

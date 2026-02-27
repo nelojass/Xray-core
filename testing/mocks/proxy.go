@@ -9,17 +9,17 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	net "github.com/xtls/xray-core/common/net"
-	routing "github.com/xtls/xray-core/features/routing"
-	transport "github.com/xtls/xray-core/transport"
-	internet "github.com/xtls/xray-core/transport/internet"
-	"github.com/xtls/xray-core/transport/internet/stat"
+	net "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	routing "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/routing"
+	transport "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport"
+	internet "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/stat"
 )
 
 // ProxyInbound is a mock of Inbound interface
 type ProxyInbound struct {
-	ctrl     *gomock.Controller
-	recorder *ProxyInboundMockRecorder
+	ctrl		*gomock.Controller
+	recorder	*ProxyInboundMockRecorder
 }
 
 // ProxyInboundMockRecorder is the mock recorder for ProxyInbound
@@ -69,8 +69,8 @@ func (mr *ProxyInboundMockRecorder) Process(arg0, arg1, arg2, arg3 interface{}) 
 
 // ProxyOutbound is a mock of Outbound interface
 type ProxyOutbound struct {
-	ctrl     *gomock.Controller
-	recorder *ProxyOutboundMockRecorder
+	ctrl		*gomock.Controller
+	recorder	*ProxyOutboundMockRecorder
 }
 
 // ProxyOutboundMockRecorder is the mock recorder for ProxyOutbound

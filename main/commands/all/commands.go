@@ -1,10 +1,10 @@
 package all
 
 import (
-	"github.com/xtls/xray-core/main/commands/all/api"
-	"github.com/xtls/xray-core/main/commands/all/convert"
-	"github.com/xtls/xray-core/main/commands/all/tls"
-	"github.com/xtls/xray-core/main/commands/base"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/main/commands/all/api"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/main/commands/all/convert"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/main/commands/all/tls"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/main/commands/base"
 )
 
 func init() {
@@ -19,6 +19,5 @@ func init() {
 		cmdMLDSA65,
 		cmdMLKEM768,
 		cmdVLESSEnc,
-		cmdBuildMphCache,
 	)
 }

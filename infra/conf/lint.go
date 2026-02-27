@@ -1,6 +1,6 @@
 package conf
 
-import "github.com/xtls/xray-core/common/errors"
+import "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
 
 type ConfigureFilePostProcessingStage interface {
 	Process(conf *Config) error

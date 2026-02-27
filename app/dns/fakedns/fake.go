@@ -4,19 +4,20 @@ import (
 	"context"
 	"math"
 	"math/big"
+	gonet "net"
 	"sync"
 	"time"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/cache"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/features/dns"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/cache"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/dns"
 )
 
 type Holder struct {
 	domainToIP cache.Lru
-	ipRange    *net.IPNet
+	ipRange    *gonet.IPNet
 	mu         *sync.Mutex
 
 	config *FakeDnsPool
@@ -78,10 +79,10 @@ func (fkdns *Holder) initializeFromConfig() error {
 }
 
 func (fkdns *Holder) initialize(ipPoolCidr string, lruSize int) error {
-	var ipRange *net.IPNet
+	var ipRange *gonet.IPNet
 	var err error
 
-	if _, ipRange, err = net.ParseCIDR(ipPoolCidr); err != nil {
+	if _, ipRange, err = gonet.ParseCIDR(ipPoolCidr); err != nil {
 		return errors.New("Unable to parse CIDR for Fake DNS IP assignment").Base(err).AtError()
 	}
 
@@ -107,7 +108,7 @@ func (fkdns *Holder) GetFakeIPForDomain(domain string) []net.Address {
 	ones, bits := fkdns.ipRange.Mask.Size()
 	rooms := bits - ones
 	if rooms < 64 {
-		currentTimeMillis %= (uint64(1) << rooms)
+		currentTimeMillis %= uint64(1) << rooms
 	}
 	bigIntIP := big.NewInt(0).SetBytes(fkdns.ipRange.IP)
 	bigIntIP = bigIntIP.Add(bigIntIP, new(big.Int).SetUint64(currentTimeMillis))

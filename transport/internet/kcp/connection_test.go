@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/xtls/xray-core/common/buf"
-	. "github.com/xtls/xray-core/transport/internet/kcp"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/buf"
+	. "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/kcp"
 )
 
 type NoOpCloser int
@@ -16,7 +16,9 @@ func (NoOpCloser) Close() error {
 }
 
 func TestConnectionReadTimeout(t *testing.T) {
-	conn := NewConnection(ConnMetadata{Conversation: 1}, buf.DiscardBytes, NoOpCloser(0), &Config{})
+	conn := NewConnection(ConnMetadata{Conversation: 1}, &KCPPacketWriter{
+		Writer: buf.DiscardBytes,
+	}, NoOpCloser(0), &Config{})
 	conn.SetReadDeadline(time.Now().Add(time.Second))
 
 	b := make([]byte, 1024)

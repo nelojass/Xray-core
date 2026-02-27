@@ -3,9 +3,8 @@ package websocket
 import (
 	"net/http"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/utils"
-	"github.com/xtls/xray-core/transport/internet"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet"
 )
 
 func (c *Config) GetNormalizedPath() string {
@@ -23,9 +22,6 @@ func (c *Config) GetRequestHeader() http.Header {
 	header := http.Header{}
 	for k, v := range c.Header {
 		header.Add(k, v)
-	}
-	if header.Get("User-Agent") == "" {
-		header.Set("User-Agent", utils.ChromeUA)
 	}
 	return header
 }

@@ -3,7 +3,7 @@ package stat
 import (
 	"net"
 
-	"github.com/xtls/xray-core/features/stats"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/stats"
 )
 
 type Connection interface {
@@ -31,14 +31,4 @@ func (c *CounterConnection) Write(b []byte) (int, error) {
 		c.WriteCounter.Add(int64(nBytes))
 	}
 	return nBytes, err
-}
-
-func TryUnwrapStatsConn(conn net.Conn) net.Conn {
-	if conn == nil {
-		return conn
-	}
-	if conn, ok := conn.(*CounterConnection); ok {
-		return conn.Connection
-	}
-	return conn
 }

@@ -3,6 +3,7 @@ package wireguard
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/netip"
 	"runtime"
 	"strconv"
@@ -10,24 +11,24 @@ import (
 	"sync"
 	"time"
 
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/log"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/proxy/wireguard/gvisortun"
-	"gvisor.dev/gvisor/pkg/tcpip"
-	"gvisor.dev/gvisor/pkg/tcpip/adapters/gonet"
-	"gvisor.dev/gvisor/pkg/tcpip/transport/tcp"
-	"gvisor.dev/gvisor/pkg/tcpip/transport/udp"
-	"gvisor.dev/gvisor/pkg/waiter"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/log"
+	xnet "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/wireguard/gvisortun"
+	"v12w.x34y.com/flyfishLib/forkHub/gvisor.dev/gvisor/pkg/tcpip"
+	"v12w.x34y.com/flyfishLib/forkHub/gvisor.dev/gvisor/pkg/tcpip/adapters/gonet"
+	"v12w.x34y.com/flyfishLib/forkHub/gvisor.dev/gvisor/pkg/tcpip/transport/tcp"
+	"v12w.x34y.com/flyfishLib/forkHub/gvisor.dev/gvisor/pkg/tcpip/transport/udp"
+	"v12w.x34y.com/flyfishLib/forkHub/gvisor.dev/gvisor/pkg/waiter"
 
-	"golang.zx2c4.com/wireguard/conn"
-	"golang.zx2c4.com/wireguard/device"
-	"golang.zx2c4.com/wireguard/tun"
+	"v12w.x34y.com/flyfishLib/forkHub/golang.zx2c4.com/wireguard/conn"
+	"v12w.x34y.com/flyfishLib/forkHub/golang.zx2c4.com/wireguard/device"
+	"v12w.x34y.com/flyfishLib/forkHub/golang.zx2c4.com/wireguard/tun"
 )
 
 type tunCreator func(localAddresses []netip.Addr, mtu int, handler promiscuousModeHandler) (Tunnel, error)
 
-type promiscuousModeHandler func(dest net.Destination, conn net.Conn)
+type promiscuousModeHandler func(dest xnet.Destination, conn net.Conn)
 
 type Tunnel interface {
 	BuildDevice(ipc string, bind conn.Bind) error
@@ -37,9 +38,9 @@ type Tunnel interface {
 }
 
 type tunnel struct {
-	tun    tun.Device
-	device *device.Device
-	rw     sync.Mutex
+	tun	tun.Device
+	device	*device.Device
+	rw	sync.Mutex
 }
 
 func (t *tunnel) BuildDevice(ipc string, bind conn.Bind) (err error) {
@@ -53,14 +54,14 @@ func (t *tunnel) BuildDevice(ipc string, bind conn.Bind) (err error) {
 	logger := &device.Logger{
 		Verbosef: func(format string, args ...any) {
 			log.Record(&log.GeneralMessage{
-				Severity: log.Severity_Debug,
-				Content:  fmt.Sprintf(format, args...),
+				Severity:	log.Severity_Debug,
+				Content:	fmt.Sprintf(format, args...),
 			})
 		},
 		Errorf: func(format string, args ...any) {
 			log.Record(&log.GeneralMessage{
-				Severity: log.Severity_Error,
-				Content:  fmt.Sprintf(format, args...),
+				Severity:	log.Severity_Error,
+				Content:	fmt.Sprintf(format, args...),
 			})
 		},
 	}
@@ -119,7 +120,7 @@ var _ Tunnel = (*gvisorNet)(nil)
 
 type gvisorNet struct {
 	tunnel
-	net *gvisortun.Net
+	net	*gvisortun.Net
 }
 
 func (g *gvisorNet) Close() error {
@@ -150,8 +151,8 @@ func createGVisorTun(localAddresses []netip.Addr, mtu int, handler promiscuousMo
 		tcpForwarder := tcp.NewForwarder(stack, 0, 65535, func(r *tcp.ForwarderRequest) {
 			go func(r *tcp.ForwarderRequest) {
 				var (
-					wq waiter.Queue
-					id = r.ID()
+					wq	waiter.Queue
+					id	= r.ID()
 				)
 
 				// Perform a TCP three-way handshake.
@@ -168,16 +169,16 @@ func createGVisorTun(localAddresses []netip.Addr, mtu int, handler promiscuousMo
 				ep.SocketOptions().SetKeepAlive(true)
 
 				// local address is actually destination
-				handler(net.TCPDestination(net.IPAddress(id.LocalAddress.AsSlice()), net.Port(id.LocalPort)), gonet.NewTCPConn(&wq, ep))
+				handler(xnet.TCPDestination(xnet.IPAddress(id.LocalAddress.AsSlice()), xnet.Port(id.LocalPort)), gonet.NewTCPConn(&wq, ep))
 			}(r)
 		})
 		stack.SetTransportProtocolHandler(tcp.ProtocolNumber, tcpForwarder.HandlePacket)
 
-		udpForwarder := udp.NewForwarder(stack, func(r *udp.ForwarderRequest) bool {
+		udpForwarder := udp.NewForwarder(stack, func(r *udp.ForwarderRequest) {
 			go func(r *udp.ForwarderRequest) {
 				var (
-					wq waiter.Queue
-					id = r.ID()
+					wq	waiter.Queue
+					id	= r.ID()
 				)
 
 				ep, err := r.CreateEndpoint(&wq)
@@ -189,14 +190,12 @@ func createGVisorTun(localAddresses []netip.Addr, mtu int, handler promiscuousMo
 
 				// prevents hanging connections and ensure timely release
 				ep.SocketOptions().SetLinger(tcpip.LingerOption{
-					Enabled: true,
-					Timeout: 15 * time.Second,
+					Enabled:	true,
+					Timeout:	15 * time.Second,
 				})
 
-				handler(net.UDPDestination(net.IPAddress(id.LocalAddress.AsSlice()), net.Port(id.LocalPort)), gonet.NewUDPConn(&wq, ep))
+				handler(xnet.UDPDestination(xnet.IPAddress(id.LocalAddress.AsSlice()), xnet.Port(id.LocalPort)), gonet.NewUDPConn(&wq, ep))
 			}(r)
-
-			return true
 		})
 		stack.SetTransportProtocolHandler(udp.ProtocolNumber, udpForwarder.HandlePacket)
 	}

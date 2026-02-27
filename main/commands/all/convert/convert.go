@@ -1,7 +1,7 @@
 package convert
 
 import (
-	"github.com/xtls/xray-core/main/commands/base"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/main/commands/base"
 )
 
 // CmdConvert do config convertion

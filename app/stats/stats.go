@@ -4,9 +4,9 @@ import (
 	"context"
 	"sync"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/features/stats"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/stats"
 )
 
 // Manager is an implementation of stats.Manager.
@@ -159,21 +159,6 @@ func (m *Manager) GetChannel(name string) stats.Channel {
 		return c
 	}
 	return nil
-}
-
-// GetAllOnlineUsers implements stats.Manager.
-func (m *Manager) GetAllOnlineUsers() []string {
-	m.access.Lock()
-	defer m.access.Unlock()
-
-	usersOnline := make([]string, 0, len(m.onlineMap))
-	for user, onlineMap := range m.onlineMap {
-		if len(onlineMap.IpTimeMap()) > 0 {
-			usersOnline = append(usersOnline, user)
-		}
-	}
-
-	return usersOnline
 }
 
 // Start implements common.Runnable.

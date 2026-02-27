@@ -12,35 +12,31 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/xtls/xray-core/app/dispatcher"
-	"github.com/xtls/xray-core/app/reverse"
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/buf"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/log"
-	"github.com/xtls/xray-core/common/mux"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/protocol"
-	"github.com/xtls/xray-core/common/retry"
-	"github.com/xtls/xray-core/common/serial"
-	"github.com/xtls/xray-core/common/session"
-	"github.com/xtls/xray-core/common/signal"
-	"github.com/xtls/xray-core/common/task"
-	"github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/features/dns"
-	feature_inbound "github.com/xtls/xray-core/features/inbound"
-	"github.com/xtls/xray-core/features/outbound"
-	"github.com/xtls/xray-core/features/policy"
-	"github.com/xtls/xray-core/features/routing"
-	"github.com/xtls/xray-core/features/stats"
-	"github.com/xtls/xray-core/proxy"
-	"github.com/xtls/xray-core/proxy/vless"
-	"github.com/xtls/xray-core/proxy/vless/encoding"
-	"github.com/xtls/xray-core/proxy/vless/encryption"
-	"github.com/xtls/xray-core/transport"
-	"github.com/xtls/xray-core/transport/internet/reality"
-	"github.com/xtls/xray-core/transport/internet/stat"
-	"github.com/xtls/xray-core/transport/internet/tls"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/stats"
+
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/buf"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/log"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/retry"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/session"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/signal"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/task"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/dns"
+	feature_inbound "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/inbound"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/policy"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/routing"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vless"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vless/encoding"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vless/encryption"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/reality"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/stat"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/tls"
 )
 
 func init() {
@@ -72,15 +68,13 @@ func init() {
 
 // Handler is an inbound connection handler that handles messages in VLess protocol.
 type Handler struct {
-	inboundHandlerManager  feature_inbound.Manager
-	policyManager          policy.Manager
-	stats                  stats.Manager
-	validator              vless.Validator
-	decryption             *encryption.ServerInstance
-	outboundHandlerManager outbound.Manager
-	defaultDispatcher      routing.Dispatcher
-	ctx                    context.Context
-	fallbacks              map[string]map[string]map[string]*Fallback // or nil
+	inboundHandlerManager feature_inbound.Manager
+	policyManager         policy.Manager
+	validator             vless.Validator
+	dns                   dns.Client
+	statManager           stats.Manager
+	decryption            *encryption.ServerInstance
+	fallbacks             map[string]map[string]map[string]*Fallback // or nil
 	// regexps               map[string]*regexp.Regexp       // or nil
 }
 
@@ -88,13 +82,11 @@ type Handler struct {
 func New(ctx context.Context, config *Config, dc dns.Client, validator vless.Validator) (*Handler, error) {
 	v := core.MustFromContext(ctx)
 	handler := &Handler{
-		inboundHandlerManager:  v.GetFeature(feature_inbound.ManagerType()).(feature_inbound.Manager),
-		policyManager:          v.GetFeature(policy.ManagerType()).(policy.Manager),
-		stats:                  v.GetFeature(stats.ManagerType()).(stats.Manager),
-		validator:              validator,
-		outboundHandlerManager: v.GetFeature(outbound.ManagerType()).(outbound.Manager),
-		defaultDispatcher:      v.GetFeature(routing.DispatcherType()).(routing.Dispatcher),
-		ctx:                    ctx,
+		inboundHandlerManager: v.GetFeature(feature_inbound.ManagerType()).(feature_inbound.Manager),
+		policyManager:         v.GetFeature(policy.ManagerType()).(policy.Manager),
+		statManager:           v.GetFeature(stats.ManagerType()).(stats.Manager),
+		dns:                   dc,
+		validator:             validator,
 	}
 
 	if config.Decryption != "" && config.Decryption != "none" {
@@ -186,48 +178,10 @@ func isMuxAndNotXUDP(request *protocol.RequestHeader, first *buf.Buffer) bool {
 		firstBytes[6] == 2) // Network type: UDP
 }
 
-func (h *Handler) GetReverse(a *vless.MemoryAccount) (*Reverse, error) {
-	u := h.validator.Get(a.ID.UUID())
-	if u == nil {
-		return nil, errors.New("reverse: user " + a.ID.String() + " doesn't exist anymore")
-	}
-	a = u.Account.(*vless.MemoryAccount)
-	if a.Reverse == nil || a.Reverse.Tag == "" {
-		return nil, errors.New("reverse: user " + a.ID.String() + " is not allowed to create reverse proxy")
-	}
-	r := h.outboundHandlerManager.GetHandler(a.Reverse.Tag)
-	if r == nil {
-		picker, _ := reverse.NewStaticMuxPicker()
-		r = &Reverse{tag: a.Reverse.Tag, picker: picker, client: &mux.ClientManager{Picker: picker}}
-		for len(h.outboundHandlerManager.ListHandlers(h.ctx)) == 0 {
-			time.Sleep(time.Second) // prevents this outbound from becoming the default outbound
-		}
-		if err := h.outboundHandlerManager.AddHandler(h.ctx, r); err != nil {
-			return nil, err
-		}
-	}
-	if r, ok := r.(*Reverse); ok {
-		return r, nil
-	}
-	return nil, errors.New("reverse: outbound " + a.Reverse.Tag + " is not type Reverse")
-}
-
-func (h *Handler) RemoveReverse(u *protocol.MemoryUser) {
-	if u != nil {
-		a := u.Account.(*vless.MemoryAccount)
-		if a.Reverse != nil && a.Reverse.Tag != "" {
-			h.outboundHandlerManager.RemoveHandler(h.ctx, a.Reverse.Tag)
-		}
-	}
-}
-
 // Close implements common.Closable.Close().
 func (h *Handler) Close() error {
 	if h.decryption != nil {
 		h.decryption.Close()
-	}
-	for _, u := range h.validator.GetAll() {
-		h.RemoveReverse(u)
 	}
 	return errors.Combine(common.Close(h.validator))
 }
@@ -239,7 +193,6 @@ func (h *Handler) AddUser(ctx context.Context, u *protocol.MemoryUser) error {
 
 // RemoveUser implements proxy.UserManager.RemoveUser().
 func (h *Handler) RemoveUser(ctx context.Context, e string) error {
-	h.RemoveReverse(h.validator.GetByEmail(e))
 	return h.validator.Del(e)
 }
 
@@ -264,8 +217,11 @@ func (*Handler) Network() []net.Network {
 }
 
 // Process implements proxy.Inbound.Process().
-func (h *Handler) Process(ctx context.Context, network net.Network, connection stat.Connection, dispatch routing.Dispatcher) error {
-	iConn := stat.TryUnwrapStatsConn(connection)
+func (h *Handler) Process(ctx context.Context, network net.Network, connection stat.Connection, dispatcher routing.Dispatcher) error {
+	iConn := connection
+	if statConn, ok := iConn.(*stat.CounterConnection); ok {
+		iConn = statConn.Connection
+	}
 
 	if h.decryption != nil {
 		var err error
@@ -523,7 +479,7 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection s
 	if err := connection.SetReadDeadline(time.Time{}); err != nil {
 		errors.LogWarningInner(ctx, err, "unable to set back read deadline")
 	}
-	errors.LogInfo(ctx, "received request for ", request.Destination())
+	errors.LogInfo(ctx, "received request for ", request.Destination(), " clientId:", request.ClientId)
 
 	inbound := session.InboundFromContext(ctx)
 	if inbound == nil {
@@ -534,10 +490,6 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection s
 	inbound.VlessRoute = net.PortFromBytes(userSentID[6:8])
 
 	account := request.User.Account.(*vless.MemoryAccount)
-
-	if account.Reverse != nil && request.Command != protocol.RequestCommandRvs {
-		return errors.New("for safety reasons, user " + account.ID.String() + " is not allowed to use forward proxy")
-	}
 
 	responseAddons := &encoding.Addons{
 		// Flow: requestAddons.Flow,
@@ -552,8 +504,7 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection s
 			switch request.Command {
 			case protocol.RequestCommandUDP:
 				return errors.New(requestAddons.Flow + " doesn't support UDP").AtWarning()
-			case protocol.RequestCommandMux, protocol.RequestCommandRvs:
-				inbound.CanSpliceCopy = 3
+			case protocol.RequestCommandMux:
 				fallthrough // we will break Mux connections that contain TCP requests
 			case protocol.RequestCommandTCP:
 				var t reflect.Type
@@ -605,6 +556,9 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection s
 		ctx = session.ContextWithAllowedNetwork(ctx, net.Network_UDP)
 	}
 
+	//todo:outbound协议可以获取到clientID
+	ctx = session.ClientIdWithContext(ctx, request.ClientId)
+
 	trafficState := proxy.NewTrafficState(userSentID)
 	clientReader := encoding.DecodeBodyAddons(reader, request, requestAddons)
 	if requestAddons.Flow == vless.XRV {
@@ -618,74 +572,11 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection s
 	clientWriter := encoding.EncodeBodyAddons(bufferWriter, request, requestAddons, trafficState, false, ctx, connection, nil)
 	bufferWriter.SetFlushNext()
 
-	if request.Command == protocol.RequestCommandRvs {
-		r, err := h.GetReverse(account)
-		if err != nil {
-			return err
-		}
-		return r.NewMux(ctx, dispatcher.WrapLink(ctx, h.policyManager, h.stats, &transport.Link{Reader: clientReader, Writer: clientWriter}))
-	}
-
-	if err := dispatch.DispatchLink(ctx, request.Destination(), &transport.Link{
+	if err := dispatcher.DispatchLink(ctx, request.Destination(), &transport.Link{
 		Reader: clientReader,
 		Writer: clientWriter},
 	); err != nil {
 		return errors.New("failed to dispatch request").Base(err)
 	}
-	return nil
-}
-
-type Reverse struct {
-	tag    string
-	picker *reverse.StaticMuxPicker
-	client *mux.ClientManager
-}
-
-func (r *Reverse) Tag() string {
-	return r.tag
-}
-
-func (r *Reverse) NewMux(ctx context.Context, link *transport.Link) error {
-	muxClient, err := mux.NewClientWorker(*link, mux.ClientStrategy{})
-	if err != nil {
-		return errors.New("failed to create mux client worker").Base(err).AtWarning()
-	}
-	worker, err := reverse.NewPortalWorker(muxClient)
-	if err != nil {
-		return errors.New("failed to create portal worker").Base(err).AtWarning()
-	}
-	r.picker.AddWorker(worker)
-	select {
-	case <-ctx.Done():
-	case <-muxClient.WaitClosed():
-	}
-	return nil
-}
-
-func (r *Reverse) Dispatch(ctx context.Context, link *transport.Link) {
-	outbounds := session.OutboundsFromContext(ctx)
-	ob := outbounds[len(outbounds)-1]
-	if ob != nil {
-		if ob.Target.Network == net.Network_UDP && ob.OriginalTarget.Address != nil && ob.OriginalTarget.Address != ob.Target.Address {
-			link.Reader = &buf.EndpointOverrideReader{Reader: link.Reader, Dest: ob.Target.Address, OriginalDest: ob.OriginalTarget.Address}
-			link.Writer = &buf.EndpointOverrideWriter{Writer: link.Writer, Dest: ob.Target.Address, OriginalDest: ob.OriginalTarget.Address}
-		}
-		r.client.Dispatch(session.ContextWithIsReverseMux(ctx, true), link)
-	}
-}
-
-func (r *Reverse) Start() error {
-	return nil
-}
-
-func (r *Reverse) Close() error {
-	return nil
-}
-
-func (r *Reverse) SenderSettings() *serial.TypedMessage {
-	return nil
-}
-
-func (r *Reverse) ProxySettings() *serial.TypedMessage {
 	return nil
 }

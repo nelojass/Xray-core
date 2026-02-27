@@ -3,9 +3,10 @@ package inbound
 import (
 	"context"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/serial"
-	"github.com/xtls/xray-core/features"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/serial"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features"
 )
 
 // Handler is the interface for handlers that process inbound connections.
@@ -19,6 +20,9 @@ type Handler interface {
 	ReceiverSettings() *serial.TypedMessage
 	// Returns the active proxy settings.
 	ProxySettings() *serial.TypedMessage
+
+	// Deprecated: Do not use in new code.
+	GetRandomInboundProxy() (interface{}, net.Port, int)
 }
 
 // Manager is a feature that manages InboundHandlers.

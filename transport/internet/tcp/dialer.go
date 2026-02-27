@@ -6,14 +6,14 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/session"
-	"github.com/xtls/xray-core/transport/internet"
-	"github.com/xtls/xray-core/transport/internet/reality"
-	"github.com/xtls/xray-core/transport/internet/stat"
-	"github.com/xtls/xray-core/transport/internet/tls"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/session"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/reality"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/stat"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/tls"
 )
 
 // Dial dials a new TCP connection to the given destination.
@@ -35,23 +35,23 @@ func Dial(ctx context.Context, dest net.Destination, streamSettings *internet.Me
 		}
 
 		isFromMitmVerify := false
-		if r, ok := tlsConfig.Rand.(*tls.RandCarrier); ok && len(r.VerifyPeerCertByName) > 0 {
-			for i, name := range r.VerifyPeerCertByName {
+		if r, ok := tlsConfig.Rand.(*tls.RandCarrier); ok && len(r.VerifyPeerCertInNames) > 0 {
+			for i, name := range r.VerifyPeerCertInNames {
 				if tls.IsFromMitm(name) {
 					isFromMitmVerify = true
-					r.VerifyPeerCertByName[0], r.VerifyPeerCertByName[i] = r.VerifyPeerCertByName[i], r.VerifyPeerCertByName[0]
-					r.VerifyPeerCertByName = r.VerifyPeerCertByName[1:]
+					r.VerifyPeerCertInNames[0], r.VerifyPeerCertInNames[i] = r.VerifyPeerCertInNames[i], r.VerifyPeerCertInNames[0]
+					r.VerifyPeerCertInNames = r.VerifyPeerCertInNames[1:]
 					after := mitmServerName
 					for {
 						if len(after) > 0 {
-							r.VerifyPeerCertByName = append(r.VerifyPeerCertByName, after)
+							r.VerifyPeerCertInNames = append(r.VerifyPeerCertInNames, after)
 						}
 						_, after, _ = strings.Cut(after, ".")
 						if !strings.Contains(after, ".") {
 							break
 						}
 					}
-					slices.Reverse(r.VerifyPeerCertByName)
+					slices.Reverse(r.VerifyPeerCertInNames)
 					break
 				}
 			}

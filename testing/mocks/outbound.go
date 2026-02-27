@@ -9,13 +9,13 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	outbound "github.com/xtls/xray-core/features/outbound"
+	outbound "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/outbound"
 )
 
 // OutboundManager is a mock of Manager interface
 type OutboundManager struct {
-	ctrl     *gomock.Controller
-	recorder *OutboundManagerMockRecorder
+	ctrl		*gomock.Controller
+	recorder	*OutboundManagerMockRecorder
 }
 
 // OutboundManagerMockRecorder is the mock recorder for OutboundManager
@@ -149,8 +149,8 @@ func (mr *OutboundManagerMockRecorder) Type() *gomock.Call {
 
 // OutboundHandlerSelector is a mock of HandlerSelector interface
 type OutboundHandlerSelector struct {
-	ctrl     *gomock.Controller
-	recorder *OutboundHandlerSelectorMockRecorder
+	ctrl		*gomock.Controller
+	recorder	*OutboundHandlerSelectorMockRecorder
 }
 
 // OutboundHandlerSelectorMockRecorder is the mock recorder for OutboundHandlerSelector

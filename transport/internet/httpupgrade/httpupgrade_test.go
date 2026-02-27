@@ -6,14 +6,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/protocol/tls/cert"
-	"github.com/xtls/xray-core/testing/servers/tcp"
-	"github.com/xtls/xray-core/transport/internet"
-	. "github.com/xtls/xray-core/transport/internet/httpupgrade"
-	"github.com/xtls/xray-core/transport/internet/stat"
-	"github.com/xtls/xray-core/transport/internet/tls"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol/tls/cert"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/testing/servers/tcp"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet"
+	. "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/httpupgrade"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/stat"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/tls"
 )
 
 func Test_listenHTTPUpgradeAndDial(t *testing.T) {
@@ -182,8 +182,6 @@ func Test_listenHTTPUpgradeAndDial_TLS(t *testing.T) {
 
 	start := time.Now()
 
-	ct, ctHash := cert.MustGenerate(nil, cert.CommonName("localhost"))
-
 	streamSettings := &internet.MemoryStreamConfig{
 		ProtocolName: "httpupgrade",
 		ProtocolSettings: &Config{
@@ -191,8 +189,8 @@ func Test_listenHTTPUpgradeAndDial_TLS(t *testing.T) {
 		},
 		SecurityType: "tls",
 		SecuritySettings: &tls.Config{
-			Certificate:          []*tls.Certificate{tls.ParseCertificate(ct)},
-			PinnedPeerCertSha256: [][]byte{ctHash[:]},
+			AllowInsecure: true,
+			Certificate:   []*tls.Certificate{tls.ParseCertificate(cert.MustGenerate(nil, cert.CommonName("localhost")))},
 		},
 	}
 	listen, err := ListenHTTPUpgrade(context.Background(), net.LocalHostIP, listenPort, streamSettings, func(conn stat.Connection) {

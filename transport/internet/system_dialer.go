@@ -3,14 +3,15 @@ package internet
 import (
 	"context"
 	"math/rand"
+	gonet "net"
 	"syscall"
 	"time"
 
 	"github.com/sagernet/sing/common/control"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/features/dns"
-	"github.com/xtls/xray-core/features/outbound"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/dns"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/outbound"
 )
 
 var effectiveSystemDialer SystemDialer = &DefaultSystemDialer{}
@@ -88,7 +89,7 @@ func (d *DefaultSystemDialer) Dial(ctx context.Context, src net.Address, dest ne
 		}, nil
 	}
 	// Chrome defaults
-	keepAliveConfig := net.KeepAliveConfig{
+	keepAliveConfig := gonet.KeepAliveConfig{
 		Enable:   true,
 		Idle:     45 * time.Second,
 		Interval: 45 * time.Second,
@@ -193,14 +194,6 @@ func (c *PacketConnWrapper) SetReadDeadline(t time.Time) error {
 
 func (c *PacketConnWrapper) SetWriteDeadline(t time.Time) error {
 	return c.Conn.SetWriteDeadline(t)
-}
-
-func (c *PacketConnWrapper) SyscallConn() (syscall.RawConn, error) {
-	sc, ok := c.Conn.(syscall.Conn)
-	if !ok {
-		return nil, syscall.EINVAL
-	}
-	return sc.SyscallConn()
 }
 
 type SystemDialerAdapter interface {

@@ -3,28 +3,23 @@ package dns
 import (
 	"context"
 
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/features/dns"
-	"github.com/xtls/xray-core/features/routing"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/dns"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/routing"
 )
 
 // ResolvableContext is an implementation of routing.Context, with domain resolving capability.
 type ResolvableContext struct {
 	routing.Context
-	dnsClient dns.Client
-	cacheIPs  []net.IP
-	hasError  bool
+	dnsClient   dns.Client
+	resolvedIPs []net.IP
 }
 
 // GetTargetIPs overrides original routing.Context's implementation.
 func (ctx *ResolvableContext) GetTargetIPs() []net.IP {
-	if len(ctx.cacheIPs) > 0 {
-		return ctx.cacheIPs
-	}
-
-	if ctx.hasError {
-		return nil
+	if len(ctx.resolvedIPs) > 0 {
+		return ctx.resolvedIPs
 	}
 
 	if domain := ctx.GetTargetDomain(); len(domain) != 0 {
@@ -34,18 +29,16 @@ func (ctx *ResolvableContext) GetTargetIPs() []net.IP {
 			FakeEnable: false,
 		})
 		if err == nil {
-			ctx.cacheIPs = ips
+			ctx.resolvedIPs = ips
 			return ips
 		}
 		errors.LogInfoInner(context.Background(), err, "resolve ip for ", domain)
 	}
 
 	if ips := ctx.Context.GetTargetIPs(); len(ips) != 0 {
-		ctx.cacheIPs = ips
 		return ips
 	}
 
-	ctx.hasError = true
 	return nil
 }
 

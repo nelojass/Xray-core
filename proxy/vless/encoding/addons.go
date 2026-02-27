@@ -5,12 +5,12 @@ import (
 	"io"
 	"net"
 
-	"github.com/xtls/xray-core/common/buf"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/protocol"
-	"github.com/xtls/xray-core/common/session"
-	"github.com/xtls/xray-core/proxy"
-	"github.com/xtls/xray-core/proxy/vless"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/buf"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/session"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vless"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -68,7 +68,7 @@ func EncodeBodyAddons(writer buf.Writer, request *protocol.RequestHeader, reques
 		return NewMultiLengthPacketWriter(writer)
 	}
 	if requestAddons.Flow == vless.XRV {
-		return proxy.NewVisionWriter(writer, state, isUplink, context, conn, ob, request.User.Account.(*vless.MemoryAccount).Testseed)
+		return proxy.NewVisionWriter(writer, state, isUplink, context, conn, ob)
 	}
 	return writer
 }

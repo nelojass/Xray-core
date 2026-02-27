@@ -8,13 +8,13 @@ import (
 	"hash/crc32"
 	"io"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/buf"
-	"github.com/xtls/xray-core/common/crypto"
-	"github.com/xtls/xray-core/common/drain"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/protocol"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/buf"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/crypto"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/drain"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol"
 )
 
 const (
@@ -139,6 +139,9 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (buf.Wri
 	if account.Cipher.IVSize() > 0 {
 		iv = make([]byte, account.Cipher.IVSize())
 		common.Must2(rand.Read(iv))
+		if ivError := account.CheckIV(iv); ivError != nil {
+			return nil, errors.New("failed to mark outgoing iv").Base(ivError)
+		}
 		if err := buf.WriteAllBytes(writer, iv, nil); err != nil {
 			return nil, errors.New("failed to write IV")
 		}
@@ -185,6 +188,10 @@ func ReadTCPResponse(user *protocol.MemoryUser, reader io.Reader) (buf.Reader, e
 		}
 	}
 
+	if ivError := account.CheckIV(iv); ivError != nil {
+		return nil, drain.WithError(drainer, reader, errors.New("failed iv check").Base(ivError))
+	}
+
 	return account.Cipher.NewDecryptionReader(account.Key, iv, reader)
 }
 
@@ -196,6 +203,9 @@ func WriteTCPResponse(request *protocol.RequestHeader, writer io.Writer) (buf.Wr
 	if account.Cipher.IVSize() > 0 {
 		iv = make([]byte, account.Cipher.IVSize())
 		common.Must2(rand.Read(iv))
+		if ivError := account.CheckIV(iv); ivError != nil {
+			return nil, errors.New("failed to mark outgoing iv").Base(ivError)
+		}
 		if err := buf.WriteAllBytes(writer, iv, nil); err != nil {
 			return nil, errors.New("failed to write IV.").Base(err)
 		}

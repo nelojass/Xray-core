@@ -7,20 +7,19 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/net"
-	http_proto "github.com/xtls/xray-core/common/protocol/http"
-	"github.com/xtls/xray-core/transport/internet"
-	"github.com/xtls/xray-core/transport/internet/stat"
-	v2tls "github.com/xtls/xray-core/transport/internet/tls"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	http_proto "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol/http"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/stat"
+	v2tls "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/tls"
 )
 
 type server struct {
 	config         *Config
 	addConn        internet.ConnHandler
 	innnerListener net.Listener
-	socketSettings *internet.SocketConfig
 }
 
 func (s *server) Close() error {
@@ -31,18 +30,7 @@ func (s *server) Addr() net.Addr {
 	return nil
 }
 
-func (s *server) Handle(conn net.Conn) {
-	upgradedConn, err := s.upgrade(conn)
-	if err != nil {
-		common.CloseIfExists(conn)
-		errors.LogInfoInner(context.Background(), err, "failed to handle request")
-		return
-	}
-	s.addConn(upgradedConn)
-}
-
-// upgrade execute a fake websocket upgrade process and return the available connection
-func (s *server) upgrade(conn net.Conn) (stat.Connection, error) {
+func (s *server) Handle(conn net.Conn) (stat.Connection, error) {
 	connReader := bufio.NewReader(conn)
 	req, err := http.ReadRequest(connReader)
 	if err != nil {
@@ -63,6 +51,7 @@ func (s *server) upgrade(conn net.Conn) (stat.Connection, error) {
 	connection := strings.ToLower(req.Header.Get("Connection"))
 	upgrade := strings.ToLower(req.Header.Get("Upgrade"))
 	if connection != "upgrade" || upgrade != "websocket" {
+		_ = conn.Close()
 		return nil, errors.New("unrecognized request")
 	}
 	resp := &http.Response{
@@ -77,20 +66,11 @@ func (s *server) upgrade(conn net.Conn) (stat.Connection, error) {
 	resp.Header.Set("Upgrade", "websocket")
 	err = resp.Write(conn)
 	if err != nil {
+		_ = conn.Close()
 		return nil, err
 	}
 
-	var forwardedAddrs []net.Address
-	if s.socketSettings != nil && len(s.socketSettings.TrustedXForwardedFor) > 0 {
-		for _, key := range s.socketSettings.TrustedXForwardedFor {
-			if len(req.Header.Values(key)) > 0 {
-				forwardedAddrs = http_proto.ParseXForwardedFor(req.Header)
-				break
-			}
-		}
-	} else {
-		forwardedAddrs = http_proto.ParseXForwardedFor(req.Header)
-	}
+	forwardedAddrs := http_proto.ParseXForwardedFor(req.Header)
 	remoteAddr := conn.RemoteAddr()
 	if len(forwardedAddrs) > 0 && forwardedAddrs[0].Family().IsIP() {
 		remoteAddr = &net.TCPAddr{
@@ -108,7 +88,12 @@ func (s *server) keepAccepting() {
 		if err != nil {
 			return
 		}
-		go s.Handle(conn)
+		handledConn, err := s.Handle(conn)
+		if err != nil {
+			errors.LogInfoInner(context.Background(), err, "failed to handle request")
+			continue
+		}
+		s.addConn(handledConn)
 	}
 }
 
@@ -156,7 +141,6 @@ func ListenHTTPUpgrade(ctx context.Context, address net.Address, port net.Port, 
 		config:         transportConfiguration,
 		addConn:        addConn,
 		innnerListener: listener,
-		socketSettings: streamSettings.SocketSettings,
 	}
 	go serverInstance.keepAccepting()
 	return serverInstance, nil

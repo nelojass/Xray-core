@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/features"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features"
 )
 
 // Counter is the interface for stats counters.
@@ -98,9 +98,6 @@ type Manager interface {
 	UnregisterChannel(string) error
 	// GetChannel returns a channel by its identifier.
 	GetChannel(string) Channel
-
-	// GetAllOnlineUsers returns all online users from all OnlineMaps.
-	GetAllOnlineUsers() []string
 }
 
 // GetOrRegisterCounter tries to get the StatCounter first. If not exist, it then tries to create a new counter.
@@ -190,11 +187,6 @@ func (NoopManager) UnregisterChannel(string) error {
 
 // GetChannel implements Manager.
 func (NoopManager) GetChannel(string) Channel {
-	return nil
-}
-
-// GetAllOnlineUsers implements Manager.
-func (NoopManager) GetAllOnlineUsers() []string {
 	return nil
 }
 

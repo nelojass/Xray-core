@@ -4,22 +4,22 @@ import (
 	"testing"
 	"time"
 
-	"github.com/xtls/xray-core/app/log"
-	"github.com/xtls/xray-core/app/proxyman"
-	"github.com/xtls/xray-core/common"
-	clog "github.com/xtls/xray-core/common/log"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/protocol"
-	"github.com/xtls/xray-core/common/serial"
-	"github.com/xtls/xray-core/common/uuid"
-	"github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/proxy/dokodemo"
-	"github.com/xtls/xray-core/proxy/freedom"
-	"github.com/xtls/xray-core/proxy/vmess"
-	"github.com/xtls/xray-core/proxy/vmess/inbound"
-	"github.com/xtls/xray-core/proxy/vmess/outbound"
-	"github.com/xtls/xray-core/testing/servers/tcp"
-	"github.com/xtls/xray-core/testing/servers/udp"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/log"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/proxyman"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	clog "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/log"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/serial"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/uuid"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/dokodemo"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/freedom"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vmess"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vmess/inbound"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vmess/outbound"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/testing/servers/tcp"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/testing/servers/udp"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -94,13 +94,17 @@ func TestDokodemoTCP(t *testing.T) {
 			Outbound: []*core.OutboundHandlerConfig{
 				{
 					ProxySettings: serial.ToTypedMessage(&outbound.Config{
-						Receiver: &protocol.ServerEndpoint{
-							Address: net.NewIPOrDomain(net.LocalHostIP),
-							Port:    uint32(serverPort),
-							User:    &protocol.User{
-								Account: serial.ToTypedMessage(&vmess.Account{
-									Id: userID.String(),
-								}),
+						Receiver: []*protocol.ServerEndpoint{
+							{
+								Address: net.NewIPOrDomain(net.LocalHostIP),
+								Port:    uint32(serverPort),
+								User: []*protocol.User{
+									{
+										Account: serial.ToTypedMessage(&vmess.Account{
+											Id: userID.String(),
+										}),
+									},
+								},
 							},
 						},
 					}),
@@ -186,13 +190,17 @@ func TestDokodemoUDP(t *testing.T) {
 			Outbound: []*core.OutboundHandlerConfig{
 				{
 					ProxySettings: serial.ToTypedMessage(&outbound.Config{
-						Receiver: &protocol.ServerEndpoint{
-							Address: net.NewIPOrDomain(net.LocalHostIP),
-							Port:    uint32(serverPort),
-							User:    &protocol.User{
-								Account: serial.ToTypedMessage(&vmess.Account{
-									Id: userID.String(),
-								}),
+						Receiver: []*protocol.ServerEndpoint{
+							{
+								Address: net.NewIPOrDomain(net.LocalHostIP),
+								Port:    uint32(serverPort),
+								User: []*protocol.User{
+									{
+										Account: serial.ToTypedMessage(&vmess.Account{
+											Id: userID.String(),
+										}),
+									},
+								},
 							},
 						},
 					}),

@@ -3,7 +3,7 @@ package task
 import (
 	"context"
 
-	"github.com/xtls/xray-core/common/signal/semaphore"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/signal/semaphore"
 )
 
 // OnSuccess executes g() after f() returns nil.

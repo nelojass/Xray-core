@@ -2,7 +2,9 @@ package strmatcher
 
 import (
 	"math/bits"
+	"reflect"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 	"unsafe"
@@ -25,40 +27,40 @@ func RollingHash(s string) uint32 {
 // 2. `substr` patterns are matched by ac automaton;
 // 3. `regex` patterns are matched with the regex library.
 type MphMatcherGroup struct {
-	Ac            *ACAutomaton
-	OtherMatchers []MatcherEntry
-	Rules         []string
-	Level0        []uint32
-	Level0Mask    int
-	Level1        []uint32
-	Level1Mask    int
-	Count         uint32
-	RuleMap       *map[string]uint32
+	ac            *ACAutomaton
+	otherMatchers []matcherEntry
+	rules         []string
+	level0        []uint32
+	level0Mask    KeyIndex
+	level1        []uint32
+	level1Mask    KeyIndex
+	count         uint32
+	ruleMap       *map[string]uint32
 }
 
 func (g *MphMatcherGroup) AddFullOrDomainPattern(pattern string, t Type) {
 	h := RollingHash(pattern)
 	switch t {
 	case Domain:
-		(*g.RuleMap)["."+pattern] = h*PrimeRK + uint32('.')
+		(*g.ruleMap)["."+pattern] = h*PrimeRK + uint32('.')
 		fallthrough
 	case Full:
-		(*g.RuleMap)[pattern] = h
+		(*g.ruleMap)[pattern] = h
 	default:
 	}
 }
 
 func NewMphMatcherGroup() *MphMatcherGroup {
 	return &MphMatcherGroup{
-		Ac:            nil,
-		OtherMatchers: nil,
-		Rules:         nil,
-		Level0:        nil,
-		Level0Mask:    0,
-		Level1:        nil,
-		Level1Mask:    0,
-		Count:         1,
-		RuleMap:       &map[string]uint32{},
+		ac:            nil,
+		otherMatchers: nil,
+		rules:         nil,
+		level0:        nil,
+		level0Mask:    0,
+		level1:        nil,
+		level1Mask:    0,
+		count:         1,
+		ruleMap:       &map[string]uint32{},
 	}
 }
 
@@ -66,10 +68,10 @@ func NewMphMatcherGroup() *MphMatcherGroup {
 func (g *MphMatcherGroup) AddPattern(pattern string, t Type) (uint32, error) {
 	switch t {
 	case Substr:
-		if g.Ac == nil {
-			g.Ac = NewACAutomaton()
+		if g.ac == nil {
+			g.ac = NewACAutomaton()
 		}
-		g.Ac.Add(pattern, t)
+		g.ac.Add(pattern, t)
 	case Full, Domain:
 		pattern = strings.ToLower(pattern)
 		g.AddFullOrDomainPattern(pattern, t)
@@ -78,56 +80,100 @@ func (g *MphMatcherGroup) AddPattern(pattern string, t Type) (uint32, error) {
 		if err != nil {
 			return 0, err
 		}
-		g.OtherMatchers = append(g.OtherMatchers, MatcherEntry{
-			M:  &RegexMatcher{Pattern: pattern, reg: r},
-			Id: g.Count,
+		g.otherMatchers = append(g.otherMatchers, matcherEntry{
+			m:  &regexMatcher{pattern: r},
+			id: g.count,
 		})
 	default:
 		panic("Unknown type")
 	}
-	return g.Count, nil
+	return g.count, nil
 }
 
-// Build builds a minimal perfect hash table and ac automaton from insert rules
-func (g *MphMatcherGroup) Build() {
-	if g.Ac != nil {
-		g.Ac.Build()
+// BuildForIOS is used to compile under IOS to prevent peek memory from being too high.
+func (g *MphMatcherGroup) BuildForIOS() {
+	if g.ac != nil {
+		g.ac.Build()
 	}
-	keyLen := len(*g.RuleMap)
+	keyLen := len(*g.ruleMap)
 	if keyLen == 0 {
 		keyLen = 1
-		(*g.RuleMap)["empty___"] = RollingHash("empty___")
+		(*g.ruleMap)["empty___"] = RollingHash("empty___")
 	}
-	g.Level0 = make([]uint32, nextPow2(keyLen/4))
-	g.Level0Mask = len(g.Level0) - 1
-	g.Level1 = make([]uint32, nextPow2(keyLen))
-	g.Level1Mask = len(g.Level1) - 1
-	sparseBuckets := make([][]int, len(g.Level0))
-	var ruleIdx int
-	for rule, hash := range *g.RuleMap {
-		n := int(hash) & g.Level0Mask
-		g.Rules = append(g.Rules, rule)
-		sparseBuckets[n] = append(sparseBuckets[n], ruleIdx)
+
+	g.level0 = make([]uint32, nextPow2(KeyIndex(keyLen/4)))
+	g.level0Mask = KeyIndex(len(g.level0) - 1)
+	g.level1 = make([]uint32, nextPow2(KeyIndex(keyLen)))
+	g.level1Mask = KeyIndex(len(g.level1) - 1)
+
+	// ==========================
+	// 改写开始：两遍算法，避免 [][]KeyIndex 内存暴涨
+	// ==========================
+
+	// 1. 计数每个 level0 桶的大小
+	counts := make([]KeyIndex, len(g.level0))
+	for _, hash := range *g.ruleMap {
+		n := KeyIndex(hash) & g.level0Mask
+		counts[n]++
+	}
+
+	// 预分配 g.rules，避免 append 扩容
+	g.rules = make([]string, 0, keyLen)
+
+	// 计算 prefix sum，得到每个桶的偏移
+	offsets := make([]KeyIndex, len(counts))
+	var total KeyIndex = 0
+	for i, cnt := range counts {
+		offsets[i] = total
+		total += cnt
+	}
+
+	// 分配平铺数组，长度 = keyLen
+	flat := make([]KeyIndex, total)
+
+	// 游标数组，初始化为 offsets
+	cursors := make([]KeyIndex, len(counts))
+	copy(cursors, offsets)
+
+	var ruleIdx KeyIndex = 0
+	for rule, hash := range *g.ruleMap {
+		g.rules = append(g.rules, rule)
+		n := KeyIndex(hash) & g.level0Mask
+		pos := cursors[n]
+		flat[pos] = ruleIdx
+		cursors[n]++
 		ruleIdx++
 	}
-	g.RuleMap = nil
-	var buckets []indexBucket
-	for n, vals := range sparseBuckets {
-		if len(vals) > 0 {
-			buckets = append(buckets, indexBucket{n, vals})
+
+	// 释放 ruleMap，减少内存占用
+	g.ruleMap = nil
+	runtime.GC() // 可选，强制回收 map 占用
+
+	// 构造 buckets
+	buckets := make([]indexBucket, 0, len(g.level0))
+	for i, cnt := range counts {
+		if cnt > 0 {
+			start := offsets[i]
+			vals := flat[start : start+cnt]
+			// 注意：vals 是 flat 的切片视图，无额外分配
+			buckets = append(buckets, indexBucket{KeyIndex(i), vals})
 		}
 	}
+	// ==========================
+	// 改写结束
+	// ==========================
+
 	sort.Sort(bySize(buckets))
 
-	occ := make([]bool, len(g.Level1))
-	var tmpOcc []int
+	occ := make([]bool, len(g.level1))
+	var tmpOcc []KeyIndex
 	for _, bucket := range buckets {
 		seed := uint32(0)
 		for {
 			findSeed := true
 			tmpOcc = tmpOcc[:0]
 			for _, i := range bucket.vals {
-				n := int(strhashFallback(unsafe.Pointer(&g.Rules[i]), uintptr(seed))) & g.Level1Mask
+				n := KeyIndex(strhashFallback(unsafe.Pointer(&g.rules[i]), uintptr(seed))) & g.level1Mask
 				if occ[n] {
 					for _, n := range tmpOcc {
 						occ[n] = false
@@ -138,32 +184,99 @@ func (g *MphMatcherGroup) Build() {
 				}
 				occ[n] = true
 				tmpOcc = append(tmpOcc, n)
-				g.Level1[n] = uint32(i)
+				g.level1[n] = uint32(i)
 			}
 			if findSeed {
-				g.Level0[bucket.n] = seed
+				g.level0[bucket.n] = seed
 				break
 			}
 		}
 	}
 }
 
-func nextPow2(v int) int {
+// Build builds a minimal perfect hash table and ac automaton from insert rules
+func (g *MphMatcherGroup) Build() {
+	if g.ac != nil {
+		g.ac.Build()
+	}
+	keyLen := len(*g.ruleMap)
+	if keyLen == 0 {
+		keyLen = 1
+		(*g.ruleMap)["empty___"] = RollingHash("empty___")
+	}
+	g.level0 = make([]uint32, nextPow2(KeyIndex(keyLen/4)))
+	g.level0Mask = KeyIndex(len(g.level0) - 1)
+	g.level1 = make([]uint32, nextPow2(KeyIndex(keyLen)))
+	g.level1Mask = KeyIndex(len(g.level1) - 1)
+	sparseBuckets := make([][]KeyIndex, len(g.level0))
+	var ruleIdx KeyIndex
+	for rule, hash := range *g.ruleMap {
+		n := KeyIndex(hash) & g.level0Mask
+		g.rules = append(g.rules, rule)
+		sparseBuckets[n] = append(sparseBuckets[n], ruleIdx)
+		ruleIdx++
+	}
+	g.ruleMap = nil
+	var buckets []indexBucket
+	for n, vals := range sparseBuckets {
+		if len(vals) > 0 {
+			buckets = append(buckets, indexBucket{KeyIndex(n), vals})
+		}
+	}
+	sort.Sort(bySize(buckets))
+
+	occ := make([]bool, len(g.level1))
+	var tmpOcc []KeyIndex
+	for _, bucket := range buckets {
+		seed := uint32(0)
+		for {
+			findSeed := true
+			tmpOcc = tmpOcc[:0]
+			for _, i := range bucket.vals {
+				n := KeyIndex(strhashFallback(unsafe.Pointer(&g.rules[i]), uintptr(seed))) & g.level1Mask
+				if occ[n] {
+					for _, n := range tmpOcc {
+						occ[n] = false
+					}
+					seed++
+					findSeed = false
+					break
+				}
+				occ[n] = true
+				tmpOcc = append(tmpOcc, n)
+				g.level1[n] = uint32(i)
+			}
+			if findSeed {
+				g.level0[bucket.n] = seed
+				break
+			}
+		}
+	}
+}
+
+func nextPow2(v KeyIndex) KeyIndex {
 	if v <= 1 {
 		return 1
 	}
-	const MaxUInt = ^uint(0)
-	n := (MaxUInt >> bits.LeadingZeros(uint(v))) + 1
-	return int(n)
+	var n KeyIndex
+	if reflect.TypeOf(v) == reflect.TypeOf(int(0)) {
+		const MaxUInt = ^uint(0)
+		n = KeyIndex((MaxUInt >> bits.LeadingZeros(uint(v))) + 1)
+	} else {
+		const MaxUInt = ^uint32(0)
+		n = (MaxUInt >> bits.LeadingZeros32(uint32(v))) + 1
+	}
+
+	return n
 }
 
 // Lookup searches for s in t and returns its index and whether it was found.
 func (g *MphMatcherGroup) Lookup(h uint32, s string) bool {
-	i0 := int(h) & g.Level0Mask
-	seed := g.Level0[i0]
-	i1 := int(strhashFallback(unsafe.Pointer(&s), uintptr(seed))) & g.Level1Mask
-	n := g.Level1[i1]
-	return s == g.Rules[int(n)]
+	i0 := KeyIndex(h) & g.level0Mask
+	seed := g.level0[i0]
+	i1 := KeyIndex(strhashFallback(unsafe.Pointer(&s), uintptr(seed))) & g.level1Mask
+	n := g.level1[i1]
+	return s == g.rules[KeyIndex(n)]
 }
 
 // Match implements IndexMatcher.Match.
@@ -183,22 +296,24 @@ func (g *MphMatcherGroup) Match(pattern string) []uint32 {
 		result = append(result, 1)
 		return result
 	}
-	if g.Ac != nil && g.Ac.Match(pattern) {
+	if g.ac != nil && g.ac.Match(pattern) {
 		result = append(result, 1)
 		return result
 	}
-	for _, e := range g.OtherMatchers {
-		if e.M.Match(pattern) {
-			result = append(result, e.Id)
+	for _, e := range g.otherMatchers {
+		if e.m.Match(pattern) {
+			result = append(result, e.id)
 			return result
 		}
 	}
 	return nil
 }
 
+type KeyIndex = uint32
+
 type indexBucket struct {
-	n    int
-	vals []int
+	n    KeyIndex
+	vals []KeyIndex
 }
 
 type bySize []indexBucket
@@ -301,8 +416,4 @@ func rotl31(x uint64) uint64 {
 func readUnaligned64(p unsafe.Pointer) uint64 {
 	q := (*[8]byte)(p)
 	return uint64(q[0]) | uint64(q[1])<<8 | uint64(q[2])<<16 | uint64(q[3])<<24 | uint64(q[4])<<32 | uint64(q[5])<<40 | uint64(q[6])<<48 | uint64(q[7])<<56
-}
-
-func (g *MphMatcherGroup) Size() uint32 {
-	return g.Count
 }

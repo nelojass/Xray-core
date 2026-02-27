@@ -2,14 +2,14 @@ package router
 
 import (
 	"context"
-	sync "sync"
+	"sync"
 
-	"github.com/xtls/xray-core/app/observatory"
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/features/extension"
-	"github.com/xtls/xray-core/features/outbound"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/observatory"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/extension"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/outbound"
 )
 
 type BalancingStrategy interface {

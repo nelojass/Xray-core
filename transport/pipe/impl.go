@@ -3,13 +3,14 @@ package pipe
 import (
 	"errors"
 	"io"
+	"runtime"
 	"sync"
 	"time"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/buf"
-	"github.com/xtls/xray-core/common/signal"
-	"github.com/xtls/xray-core/common/signal/done"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/buf"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/signal"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/signal/done"
 )
 
 type state byte
@@ -135,10 +136,11 @@ func (p *pipe) writeMultiBufferInternal(mb buf.MultiBuffer) error {
 
 	if p.data == nil {
 		p.data = mb
-	} else {
-		p.data, _ = buf.MergeMulti(p.data, mb)
+		return nil
 	}
-	return nil
+
+	p.data, _ = buf.MergeMulti(p.data, mb)
+	return errSlowDown
 }
 
 func (p *pipe) WriteMultiBuffer(mb buf.MultiBuffer) error {
@@ -153,23 +155,30 @@ func (p *pipe) WriteMultiBuffer(mb buf.MultiBuffer) error {
 			return nil
 		}
 
-		if err == errBufferFull {
-			if p.option.discardOverflow {
-				buf.ReleaseMulti(mb)
-				return nil
-			}
-			select {
-			case <-p.writeSignal.Wait():
-				continue
-			case <-p.done.Wait():
-				buf.ReleaseMulti(mb)
-				return io.ErrClosedPipe
-			}
+		if err == errSlowDown {
+			p.readSignal.Signal()
+
+			// Yield current goroutine. Hopefully the reading counterpart can pick up the payload.
+			runtime.Gosched()
+			return nil
 		}
 
-		buf.ReleaseMulti(mb)
-		p.readSignal.Signal()
-		return err
+		if err == errBufferFull && p.option.discardOverflow {
+			buf.ReleaseMulti(mb)
+			return nil
+		}
+
+		if err != errBufferFull {
+			buf.ReleaseMulti(mb)
+			p.readSignal.Signal()
+			return err
+		}
+
+		select {
+		case <-p.writeSignal.Wait():
+		case <-p.done.Wait():
+			return io.ErrClosedPipe
+		}
 	}
 }
 

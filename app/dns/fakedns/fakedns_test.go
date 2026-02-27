@@ -1,14 +1,15 @@
 package fakedns
 
 import (
+	gonet "net"
 	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/uuid"
-	"github.com/xtls/xray-core/features/dns"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/uuid"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/dns"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -154,7 +155,7 @@ func TestFakeDNSMulti(t *testing.T) {
 			assert.True(t, inPool)
 		})
 		t.Run("ipv6", func(t *testing.T) {
-			ip, err := net.ResolveIPAddr("ip", "fddd:c5b4:ff5f:f4f0::5")
+			ip, err := gonet.ResolveIPAddr("ip", "fddd:c5b4:ff5f:f4f0::5")
 			assert.Nil(t, err)
 			inPool := fakeMulti.IsIPInIPPool(net.IPAddress(ip.IP))
 			assert.True(t, inPool)
@@ -164,7 +165,7 @@ func TestFakeDNSMulti(t *testing.T) {
 			assert.False(t, inPool)
 		})
 		t.Run("ipv6_inverse", func(t *testing.T) {
-			ip, err := net.ResolveIPAddr("ip", "fcdd:c5b4:ff5f:f4f0::5")
+			ip, err := gonet.ResolveIPAddr("ip", "fcdd:c5b4:ff5f:f4f0::5")
 			assert.Nil(t, err)
 			inPool := fakeMulti.IsIPInIPPool(net.IPAddress(ip.IP))
 			assert.False(t, inPool)

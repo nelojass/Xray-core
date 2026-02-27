@@ -6,9 +6,9 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/xtls/xray-core/app/stats"
-	. "github.com/xtls/xray-core/app/stats/command"
-	"github.com/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/stats"
+	. "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/stats/command"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
 )
 
 func TestGetStats(t *testing.T) {

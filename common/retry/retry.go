@@ -3,7 +3,7 @@ package retry // import "github.com/xtls/xray-core/common/retry"
 import (
 	"time"
 
-	"github.com/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
 )
 
 var ErrRetryFailed = errors.New("all retry attempts failed")

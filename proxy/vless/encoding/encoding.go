@@ -2,17 +2,17 @@ package encoding
 
 import (
 	"context"
+	"encoding/binary"
 	"io"
 
-	"github.com/xtls/xray-core/common/buf"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/protocol"
-	"github.com/xtls/xray-core/common/session"
-	"github.com/xtls/xray-core/common/signal"
-	"github.com/xtls/xray-core/common/uuid"
-	"github.com/xtls/xray-core/proxy"
-	"github.com/xtls/xray-core/proxy/vless"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/buf"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/session"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/signal"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vless"
 )
 
 const (
@@ -39,6 +39,13 @@ func EncodeRequestHeader(writer io.Writer, request *protocol.RequestHeader, requ
 		return errors.New("failed to write request user id").Base(err)
 	}
 
+	//todo： add client id
+	idBuf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(idBuf, request.ClientId)
+	if _, err := buffer.Write(idBuf); err != nil {
+		return errors.New("failed to write request client id").Base(err)
+	}
+
 	if err := EncodeHeaderAddons(&buffer, requestAddons); err != nil {
 		return errors.New("failed to encode request header addons").Base(err)
 	}
@@ -47,7 +54,7 @@ func EncodeRequestHeader(writer io.Writer, request *protocol.RequestHeader, requ
 		return errors.New("failed to write request command").Base(err)
 	}
 
-	if request.Command != protocol.RequestCommandMux && request.Command != protocol.RequestCommandRvs {
+	if request.Command != protocol.RequestCommandMux {
 		if err := addrParser.WriteAddressPort(&buffer, request.Address, request.Port); err != nil {
 			return errors.New("failed to write request address and port").Base(err)
 		}
@@ -92,12 +99,25 @@ func DecodeRequestHeader(isfb bool, first *buf.Buffer, reader io.Reader, validat
 		}
 
 		if request.User = validator.Get(id); request.User == nil {
-			u := uuid.UUID(id)
-			return nil, nil, nil, isfb, errors.New("invalid request user id: " + u.String())
+			return nil, nil, nil, isfb, errors.New("invalid request user id")
 		}
 
+		//todo: decode request client id
+		var clientId = make([]byte, 8)
 		if isfb {
 			first.Advance(17)
+			copy(clientId[:], first.BytesRange(17, 25))
+		} else {
+			buffer.Clear()
+			if _, err := buffer.ReadFullFrom(reader, 8); err != nil {
+				return nil, nil, nil, false, errors.New("failed to read request client id").Base(err)
+			}
+			copy(clientId[:], buffer.Bytes())
+		}
+		request.ClientId = binary.LittleEndian.Uint64(clientId)
+
+		if isfb {
+			first.Advance(17 + 8)
 		}
 
 		requestAddons, err := DecodeHeaderAddons(&buffer, reader)
@@ -114,8 +134,7 @@ func DecodeRequestHeader(isfb bool, first *buf.Buffer, reader io.Reader, validat
 		switch request.Command {
 		case protocol.RequestCommandMux:
 			request.Address = net.DomainAddress("v1.mux.cool")
-		case protocol.RequestCommandRvs:
-			request.Address = net.DomainAddress("v1.rvs.cool")
+			request.Port = 0
 		case protocol.RequestCommandTCP, protocol.RequestCommandUDP:
 			if addr, port, err := addrParser.ReadAddressPort(&buffer, reader); err == nil {
 				request.Address = addr

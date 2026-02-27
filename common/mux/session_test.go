@@ -3,7 +3,7 @@ package mux_test
 import (
 	"testing"
 
-	. "github.com/xtls/xray-core/common/mux"
+	. "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/mux"
 )
 
 func TestSessionManagerAdd(t *testing.T) {
@@ -41,11 +41,11 @@ func TestSessionManagerClose(t *testing.T) {
 	m := NewSessionManager()
 	s := m.Allocate(&ClientStrategy{})
 
-	if m.CloseIfNoSessionAndIdle(m.Size(), m.Count()) {
+	if m.CloseIfNoSession() {
 		t.Error("able to close")
 	}
 	m.Remove(false, s.ID)
-	if !m.CloseIfNoSessionAndIdle(m.Size(), m.Count()) {
+	if !m.CloseIfNoSession() {
 		t.Error("not able to close")
 	}
 }

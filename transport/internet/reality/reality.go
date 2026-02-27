@@ -23,15 +23,14 @@ import (
 
 	"github.com/cloudflare/circl/sign/mldsa/mldsa65"
 	utls "github.com/refraction-networking/utls"
-	"github.com/xtls/reality"
-	"github.com/xtls/xray-core/common/crypto"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/utils"
-	"github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/transport/internet/tls"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/reality"
 	"golang.org/x/crypto/hkdf"
 	"golang.org/x/net/http2"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/crypto"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/tls"
 )
 
 type Conn struct {
@@ -56,10 +55,10 @@ func Server(c net.Conn, config *reality.Config) (net.Conn, error) {
 
 type UConn struct {
 	*utls.UConn
-	Config     *Config
-	ServerName string
-	AuthKey    []byte
-	Verified   bool
+	Config		*Config
+	ServerName	string
+	AuthKey		[]byte
+	Verified	bool
 }
 
 func (c *UConn) HandshakeAddress() net.Address {
@@ -76,11 +75,12 @@ func (c *UConn) HandshakeAddress() net.Address {
 func (c *UConn) VerifyPeerCertificate(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
 	if c.Config.Show {
 		localAddr := c.LocalAddr().String()
-		fmt.Printf("REALITY localAddr: %v\tis using X25519MLKEM768 for TLS' communication: %v\n", localAddr, c.HandshakeState.ServerHello.ServerShare.Group == utls.X25519MLKEM768)
+		curveID := *(*utls.CurveID)(unsafe.Pointer(reflect.ValueOf(c).Elem().FieldByName("curveID").UnsafeAddr()))
+		fmt.Printf("REALITY localAddr: %v\tis using X25519MLKEM768 for TLS' communication: %v\n", localAddr, curveID == utls.X25519MLKEM768)
 		fmt.Printf("REALITY localAddr: %v\tis using ML-DSA-65 for cert's extra verification: %v\n", localAddr, len(c.Config.Mldsa65Verify) > 0)
 	}
 	p, _ := reflect.TypeOf(c.Conn).Elem().FieldByName("peerCertificates")
-	certs := *(*([]*x509.Certificate))(unsafe.Pointer(uintptr(unsafe.Pointer(c.Conn)) + p.Offset))
+	certs := *(*[]*x509.Certificate)(unsafe.Pointer(uintptr(unsafe.Pointer(c.Conn)) + p.Offset))
 	if pub, ok := certs[0].PublicKey.(ed25519.PublicKey); ok {
 		h := hmac.New(sha512.New, c.AuthKey)
 		h.Write(pub)
@@ -102,8 +102,8 @@ func (c *UConn) VerifyPeerCertificate(rawCerts [][]byte, verifiedChains [][]*x50
 		}
 	}
 	opts := x509.VerifyOptions{
-		DNSName:       c.ServerName,
-		Intermediates: x509.NewCertPool(),
+		DNSName:	c.ServerName,
+		Intermediates:	x509.NewCertPool(),
 	}
 	for _, cert := range certs[1:] {
 		opts.Intermediates.AddCert(cert)
@@ -120,11 +120,11 @@ func UClient(c net.Conn, config *Config, ctx context.Context, dest net.Destinati
 		Config: config,
 	}
 	utlsConfig := &utls.Config{
-		VerifyPeerCertificate:  uConn.VerifyPeerCertificate,
-		ServerName:             config.ServerName,
-		InsecureSkipVerify:     true,
-		SessionTicketsDisabled: true,
-		KeyLogWriter:           KeyLogWriterFromConfig(config),
+		VerifyPeerCertificate:	uConn.VerifyPeerCertificate,
+		ServerName:		config.ServerName,
+		InsecureSkipVerify:	true,
+		SessionTicketsDisabled:	true,
+		KeyLogWriter:		KeyLogWriterFromConfig(config),
 	}
 	if utlsConfig.ServerName == "" {
 		utlsConfig.ServerName = dest.Address.String()
@@ -139,11 +139,11 @@ func UClient(c net.Conn, config *Config, ctx context.Context, dest net.Destinati
 		uConn.BuildHandshakeState()
 		hello := uConn.HandshakeState.Hello
 		hello.SessionId = make([]byte, 32)
-		copy(hello.Raw[39:], hello.SessionId) // the fixed location of `Session ID`
+		copy(hello.Raw[39:], hello.SessionId)	// the fixed location of `Session ID`
 		hello.SessionId[0] = core.Version_x
 		hello.SessionId[1] = core.Version_y
 		hello.SessionId[2] = core.Version_z
-		hello.SessionId[3] = 0 // reserved
+		hello.SessionId[3] = 0	// reserved
 		binary.BigEndian.PutUint32(hello.SessionId[4:], uint32(time.Now().Unix()))
 		copy(hello.SessionId[8:], config.ShortId)
 		if config.Show {
@@ -181,14 +181,13 @@ func UClient(c net.Conn, config *Config, ctx context.Context, dest net.Destinati
 		fmt.Printf("REALITY localAddr: %v\tuConn.Verified: %v\n", localAddr, uConn.Verified)
 	}
 	if !uConn.Verified {
-		errors.LogError(ctx, "REALITY: received real certificate (potential MITM or redirection)")
+		//TODO: may be tls certs fetched failed from our server.
+		return nil, errors.New("REALITY: processed invalid connection for name ", uConn.ServerName).AtError()
 		go func() {
 			client := &http.Client{
 				Transport: &http2.Transport{
 					DialTLSContext: func(ctx context.Context, network, addr string, cfg *gotls.Config) (net.Conn, error) {
-						if config.Show {
-							fmt.Printf("REALITY localAddr: %v\tDialTLSContext\n", localAddr)
-						}
+						fmt.Printf("REALITY localAddr: %v\tDialTLSContext\n", localAddr)
 						return uConn, nil
 					},
 				},
@@ -208,10 +207,10 @@ func UClient(c net.Conn, config *Config, ctx context.Context, dest net.Destinati
 			maps.Unlock()
 			get := func(first bool) {
 				var (
-					req  *http.Request
-					resp *http.Response
-					err  error
-					body []byte
+					req	*http.Request
+					resp	*http.Response
+					err	error
+					body	[]byte
 				)
 				if first {
 					req, _ = http.NewRequest("GET", firstURL, nil)
@@ -223,7 +222,7 @@ func UClient(c net.Conn, config *Config, ctx context.Context, dest net.Destinati
 				if req == nil {
 					return
 				}
-				req.Header.Set("User-Agent", utils.ChromeUA)
+				req.Header.Set("User-Agent", fingerprint.Client)	// TODO: User-Agent map
 				if first && config.Show {
 					fmt.Printf("REALITY localAddr: %v\treq.UserAgent(): %v\n", localAddr, req.UserAgent())
 				}
@@ -259,7 +258,7 @@ func UClient(c net.Conn, config *Config, ctx context.Context, dest net.Destinati
 					}
 					maps.Unlock()
 					if !first {
-						time.Sleep(time.Duration(crypto.RandBetween(config.SpiderY[6], config.SpiderY[7])) * time.Millisecond) // interval
+						time.Sleep(time.Duration(crypto.RandBetween(config.SpiderY[6], config.SpiderY[7])) * time.Millisecond)	// interval
 					}
 				}
 			}
@@ -270,20 +269,20 @@ func UClient(c net.Conn, config *Config, ctx context.Context, dest net.Destinati
 			}
 			// Do not close the connection
 		}()
-		time.Sleep(time.Duration(crypto.RandBetween(config.SpiderY[8], config.SpiderY[9])) * time.Millisecond) // return
+		time.Sleep(time.Duration(crypto.RandBetween(config.SpiderY[8], config.SpiderY[9])) * time.Millisecond)	// return
 		return nil, errors.New("REALITY: processed invalid connection").AtWarning()
 	}
 	return uConn, nil
 }
 
 var (
-	href = regexp.MustCompile(`href="([/h].*?)"`)
-	dot  = []byte(".")
+	href	= regexp.MustCompile(`href="([/h].*?)"`)
+	dot	= []byte(".")
 )
 
 var maps struct {
 	sync.Mutex
-	maps map[string]map[string]struct{}
+	maps	map[string]map[string]struct{}
 }
 
 func getPathLocked(paths map[string]struct{}) string {

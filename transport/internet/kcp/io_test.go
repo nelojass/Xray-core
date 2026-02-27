@@ -3,11 +3,13 @@ package kcp_test
 import (
 	"testing"
 
-	. "github.com/xtls/xray-core/transport/internet/kcp"
+	. "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/kcp"
 )
 
 func TestKCPPacketReader(t *testing.T) {
-	reader := KCPPacketReader{}
+	reader := KCPPacketReader{
+		Security: &SimpleAuthenticator{},
+	}
 
 	testCases := []struct {
 		Input  []byte

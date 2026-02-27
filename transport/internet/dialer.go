@@ -3,19 +3,20 @@ package internet
 import (
 	"context"
 	"fmt"
+	gonet "net"
 	"strings"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/dice"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/net/cnc"
-	"github.com/xtls/xray-core/common/session"
-	"github.com/xtls/xray-core/features/dns"
-	"github.com/xtls/xray-core/features/outbound"
-	"github.com/xtls/xray-core/transport"
-	"github.com/xtls/xray-core/transport/internet/stat"
-	"github.com/xtls/xray-core/transport/pipe"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/dice"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net/cnc"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/session"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/dns"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/outbound"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/stat"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/pipe"
 )
 
 // Dialer is the interface for dialing outbound connections.
@@ -182,7 +183,7 @@ func checkAddressPortStrategy(ctx context.Context, dest net.Destination, sockopt
 		if len(parts) != 3 {
 			return nil, errors.New("invalid address format", dest.Address.String())
 		}
-		_, srvRecords, err := net.DefaultResolver.LookupSRV(context.Background(), parts[0][1:], parts[1][1:], parts[2])
+		_, srvRecords, err := gonet.DefaultResolver.LookupSRV(context.Background(), parts[0][1:], parts[1][1:], parts[2])
 		if err != nil {
 			return nil, errors.New("failed to lookup SRV record").Base(err)
 		}
@@ -197,7 +198,7 @@ func checkAddressPortStrategy(ctx context.Context, dest net.Destination, sockopt
 	}
 	if OverrideBy == "txt" {
 		errors.LogDebug(ctx, "query TXT record for "+dest.Address.String())
-		txtRecords, err := net.DefaultResolver.LookupTXT(ctx, dest.Address.String())
+		txtRecords, err := gonet.DefaultResolver.LookupTXT(ctx, dest.Address.String())
 		if err != nil {
 			errors.LogError(ctx, "failed to lookup SRV record: "+err.Error())
 			return nil, errors.New("failed to lookup SRV record").Base(err)

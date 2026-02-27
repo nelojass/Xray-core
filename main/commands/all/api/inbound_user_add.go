@@ -4,21 +4,21 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/xtls/xray-core/common/protocol"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol"
 
-	handlerService "github.com/xtls/xray-core/app/proxyman/command"
-	cserial "github.com/xtls/xray-core/common/serial"
+	handlerService "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/proxyman/command"
+	cserial "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/serial"
 
-	"github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/infra/conf"
-	"github.com/xtls/xray-core/infra/conf/serial"
-	"github.com/xtls/xray-core/proxy/shadowsocks"
-	"github.com/xtls/xray-core/proxy/shadowsocks_2022"
-	"github.com/xtls/xray-core/proxy/trojan"
-	vlessin "github.com/xtls/xray-core/proxy/vless/inbound"
-	vmessin "github.com/xtls/xray-core/proxy/vmess/inbound"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/infra/conf"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/infra/conf/serial"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/shadowsocks"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/shadowsocks_2022"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/trojan"
+	vlessin "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vless/inbound"
+	vmessin "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vmess/inbound"
 
-	"github.com/xtls/xray-core/main/commands/base"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/main/commands/base"
 )
 
 var cmdAddInboundUsers = &base.Command{

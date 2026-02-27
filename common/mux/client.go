@@ -7,19 +7,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/buf"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/protocol"
-	"github.com/xtls/xray-core/common/session"
-	"github.com/xtls/xray-core/common/signal/done"
-	"github.com/xtls/xray-core/common/task"
-	"github.com/xtls/xray-core/common/xudp"
-	"github.com/xtls/xray-core/proxy"
-	"github.com/xtls/xray-core/transport"
-	"github.com/xtls/xray-core/transport/internet"
-	"github.com/xtls/xray-core/transport/pipe"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/buf"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/session"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/signal/done"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/task"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/xudp"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/pipe"
 )
 
 type ClientManager struct {
@@ -215,20 +215,14 @@ func (m *ClientWorker) Closed() bool {
 	return m.done.Done()
 }
 
-func (m *ClientWorker) WaitClosed() <-chan struct{} {
-	return m.done.Wait()
-}
-
-func (m *ClientWorker) Close() error {
-	return m.done.Close()
+func (m *ClientWorker) GetTimer() *time.Ticker {
+	return m.timer
 }
 
 func (m *ClientWorker) monitor() {
 	defer m.timer.Stop()
 
 	for {
-		checkSize := m.sessionManager.Size()
-		checkCount := m.sessionManager.Count()
 		select {
 		case <-m.done.Wait():
 			m.sessionManager.Close()
@@ -236,7 +230,8 @@ func (m *ClientWorker) monitor() {
 			common.Interrupt(m.link.Reader)
 			return
 		case <-m.timer.C:
-			if m.sessionManager.CloseIfNoSessionAndIdle(checkSize, checkCount) {
+			size := m.sessionManager.Size()
+			if size == 0 && m.sessionManager.CloseIfNoSession() {
 				common.Must(m.done.Close())
 			}
 		}
@@ -256,7 +251,7 @@ func writeFirstPayload(reader buf.Reader, writer *Writer) error {
 	return nil
 }
 
-func fetchInput(ctx context.Context, s *Session, output buf.Writer) {
+func fetchInput(ctx context.Context, s *Session, output buf.Writer, timer *time.Ticker) {
 	outbounds := session.OutboundsFromContext(ctx)
 	ob := outbounds[len(outbounds)-1]
 	transferType := protocol.TransferTypeStream
@@ -264,13 +259,10 @@ func fetchInput(ctx context.Context, s *Session, output buf.Writer) {
 		transferType = protocol.TransferTypePacket
 	}
 	s.transferType = transferType
-	var inbound *session.Inbound
-	if session.IsReverseMuxFromContext(ctx) {
-		inbound = session.InboundFromContext(ctx)
-	}
-	writer := NewWriter(s.ID, ob.Target, output, transferType, xudp.GetGlobalID(ctx), inbound)
+	writer := NewWriter(s.ID, ob.Target, output, transferType, xudp.GetGlobalID(ctx))
 	defer s.Close(false)
 	defer writer.Close()
+	defer timer.Reset(time.Second * 16)
 
 	errors.LogInfo(ctx, "dispatching request to ", ob.Target)
 	if err := writeFirstPayload(s.input, writer); err != nil {
@@ -320,12 +312,10 @@ func (m *ClientWorker) Dispatch(ctx context.Context, link *transport.Link) bool 
 	}
 	s.input = link.Reader
 	s.output = link.Writer
-	go fetchInput(ctx, s, m.link.Writer)
-	if _, ok := link.Reader.(*pipe.Reader); !ok {
-		select {
-		case <-ctx.Done():
-		case <-s.done.Wait():
-		}
+	if _, ok := link.Reader.(*pipe.Reader); ok {
+		go fetchInput(ctx, s, m.link.Writer, m.timer)
+	} else {
+		fetchInput(ctx, s, m.link.Writer, m.timer)
 	}
 	return true
 }
@@ -388,7 +378,7 @@ func (m *ClientWorker) fetchOutput() {
 
 	var meta FrameMetadata
 	for {
-		err := meta.Unmarshal(reader, false)
+		err := meta.Unmarshal(reader)
 		if err != nil {
 			if errors.Cause(err) != io.EOF {
 				errors.LogInfoInner(context.Background(), err, "failed to read metadata")

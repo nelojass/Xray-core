@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
 )
 
 // Channel is an implementation of stats.Channel.
@@ -70,7 +70,8 @@ func (c *Channel) Unsubscribe(subscriber chan interface{}) error {
 
 // Publish implements stats.Channel.
 func (c *Channel) Publish(ctx context.Context, msg interface{}) {
-	select { // Early exit if channel closed
+	select {
+	// Early exit if channel closed
 	case <-c.closed:
 		return
 	default:
@@ -86,7 +87,8 @@ func (c *Channel) Publish(ctx context.Context, msg interface{}) {
 // Running returns whether the channel is running.
 func (c *Channel) Running() bool {
 	select {
-	case <-c.closed: // Channel closed
+	case <-c.closed:
+	// Channel closed
 	default: // Channel running or not initialized
 		if c.closed != nil { // Channel initialized
 			return true

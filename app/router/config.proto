@@ -79,7 +79,7 @@ message RoutingRule {
     // Tag of routing balancer.
     string balancing_tag = 12;
   }
-    string rule_tag = 19;
+  string rule_tag = 19;
 
   // List of domains for target domain matching.
   repeated Domain domain = 2;
@@ -113,7 +113,6 @@ message RoutingRule {
   xray.common.net.PortList local_port_list = 18;
 
   xray.common.net.PortList vless_route_list = 20;
-  repeated string process = 21;
 }
 
 message BalancingRule {
@@ -127,7 +126,7 @@ message BalancingRule {
 message StrategyWeight {
   bool regexp = 1;
   string match = 2;
-  float value =3;
+  float value = 3;
 }
 
 message StrategyLeastLoadConfig {
@@ -148,8 +147,8 @@ message Config {
     // Use domain as is.
     AsIs = 0;
 
-    // [Deprecated] Always resolve IP for domains.
-    // UseIp = 1;
+    // Always resolve IP for domains.
+    UseIp = 1;
 
     // Resolve to IP if the domain doesn't match any rules.
     IpIfNonMatch = 2;

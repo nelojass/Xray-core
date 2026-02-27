@@ -1,8 +1,8 @@
 package conf
 
 import (
-	"github.com/xtls/xray-core/app/version"
-	"github.com/xtls/xray-core/core"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/version"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
 	"strconv"
 )
 

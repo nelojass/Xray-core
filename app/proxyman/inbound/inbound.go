@@ -4,22 +4,22 @@ import (
 	"context"
 	"sync"
 
-	"github.com/xtls/xray-core/app/proxyman"
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/serial"
-	"github.com/xtls/xray-core/common/session"
-	"github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/features/inbound"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/proxyman"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/serial"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/session"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/inbound"
 )
 
 // Manager manages all inbound handlers.
 type Manager struct {
-	access          sync.RWMutex
+	access           sync.RWMutex
 	untaggedHandlers []inbound.Handler
-	taggedHandlers  map[string]inbound.Handler
-	running         bool
+	taggedHandlers   map[string]inbound.Handler
+	running          bool
 }
 
 // New returns a new Manager for inbound handlers.
@@ -178,7 +178,15 @@ func NewHandler(ctx context.Context, config *core.InboundHandlerConfig) (inbound
 		ctx = session.ContextWithAllowedNetwork(ctx, net.Network_UDP)
 	}
 
-	return NewAlwaysOnInboundHandler(ctx, tag, receiverSettings, proxySettings)
+	allocStrategy := receiverSettings.AllocationStrategy
+	if allocStrategy == nil || allocStrategy.Type == proxyman.AllocationStrategy_Always {
+		return NewAlwaysOnInboundHandler(ctx, tag, receiverSettings, proxySettings)
+	}
+
+	if allocStrategy.Type == proxyman.AllocationStrategy_Random {
+		return NewDynamicInboundHandler(ctx, tag, receiverSettings, proxySettings)
+	}
+	return nil, errors.New("unknown allocation strategy: ", receiverSettings.AllocationStrategy.Type).AtError()
 }
 
 func init() {

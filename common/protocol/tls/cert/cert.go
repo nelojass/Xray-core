@@ -6,15 +6,14 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha256"
 	"crypto/x509"
 	"encoding/asn1"
 	"encoding/pem"
 	"math/big"
 	"time"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
 )
 
 type Certificate struct {
@@ -88,10 +87,10 @@ func Organization(org string) Option {
 	}
 }
 
-func MustGenerate(parent *Certificate, opts ...Option) (*Certificate, [32]byte) {
+func MustGenerate(parent *Certificate, opts ...Option) *Certificate {
 	cert, err := Generate(parent, opts...)
 	common.Must(err)
-	return cert, sha256.Sum256(cert.Certificate)
+	return cert
 }
 
 func publicKey(priv interface{}) interface{} {

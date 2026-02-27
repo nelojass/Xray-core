@@ -4,11 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/log"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/features/dns"
-	"github.com/xtls/xray-core/features/dns/localdns"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/log"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/dns"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/dns/localdns"
 )
 
 // LocalNameServer is an wrapper over local DNS feature.
@@ -33,11 +33,6 @@ func (s *LocalNameServer) QueryIP(ctx context.Context, domain string, option dns
 // Name implements Server.
 func (s *LocalNameServer) Name() string {
 	return "localhost"
-}
-
-// IsDisableCache implements Server.
-func (s *LocalNameServer) IsDisableCache() bool {
-	return true
 }
 
 // NewLocalNameServer creates localdns server object for directly lookup in system DNS.

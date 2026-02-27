@@ -6,25 +6,25 @@ import (
 	"testing"
 	"time"
 
-	"github.com/xtls/xray-core/app/proxyman"
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/protocol"
-	"github.com/xtls/xray-core/common/protocol/tls/cert"
-	"github.com/xtls/xray-core/common/serial"
-	"github.com/xtls/xray-core/common/uuid"
-	core "github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/proxy/dokodemo"
-	"github.com/xtls/xray-core/proxy/freedom"
-	"github.com/xtls/xray-core/proxy/vmess"
-	"github.com/xtls/xray-core/proxy/vmess/inbound"
-	"github.com/xtls/xray-core/proxy/vmess/outbound"
-	"github.com/xtls/xray-core/testing/servers/tcp"
-	"github.com/xtls/xray-core/testing/servers/udp"
-	"github.com/xtls/xray-core/transport/internet"
-	"github.com/xtls/xray-core/transport/internet/grpc"
-	"github.com/xtls/xray-core/transport/internet/tls"
-	"github.com/xtls/xray-core/transport/internet/websocket"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/proxyman"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol/tls/cert"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/serial"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/uuid"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/dokodemo"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/freedom"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vmess"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vmess/inbound"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/proxy/vmess/outbound"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/testing/servers/tcp"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/testing/servers/udp"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/grpc"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/tls"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/websocket"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -35,8 +35,6 @@ func TestSimpleTLSConnection(t *testing.T) {
 	dest, err := tcpServer.Start()
 	common.Must(err)
 	defer tcpServer.Close()
-
-	ct, ctHash := cert.MustGenerate(nil, cert.CommonName("localhost"))
 
 	userID := protocol.NewID(uuid.New())
 	serverPort := tcp.PickPort()
@@ -50,7 +48,7 @@ func TestSimpleTLSConnection(t *testing.T) {
 						SecurityType: serial.GetMessageType(&tls.Config{}),
 						SecuritySettings: []*serial.TypedMessage{
 							serial.ToTypedMessage(&tls.Config{
-								Certificate: []*tls.Certificate{tls.ParseCertificate(ct)},
+								Certificate: []*tls.Certificate{tls.ParseCertificate(cert.MustGenerate(nil))},
 							}),
 						},
 					},
@@ -91,13 +89,17 @@ func TestSimpleTLSConnection(t *testing.T) {
 		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
-					Receiver: &protocol.ServerEndpoint{
-						Address: net.NewIPOrDomain(net.LocalHostIP),
-						Port:    uint32(serverPort),
-						User: &protocol.User{
-							Account: serial.ToTypedMessage(&vmess.Account{
-								Id: userID.String(),
-							}),
+					Receiver: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: serial.ToTypedMessage(&vmess.Account{
+										Id: userID.String(),
+									}),
+								},
+							},
 						},
 					},
 				}),
@@ -106,7 +108,7 @@ func TestSimpleTLSConnection(t *testing.T) {
 						SecurityType: serial.GetMessageType(&tls.Config{}),
 						SecuritySettings: []*serial.TypedMessage{
 							serial.ToTypedMessage(&tls.Config{
-								PinnedPeerCertSha256: [][]byte{ctHash[:]},
+								AllowInsecure: true,
 							}),
 						},
 					},
@@ -202,13 +204,17 @@ func TestAutoIssuingCertificate(t *testing.T) {
 		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
-					Receiver: &protocol.ServerEndpoint{
-						Address: net.NewIPOrDomain(net.LocalHostIP),
-						Port:    uint32(serverPort),
-						User: &protocol.User{
-							Account: serial.ToTypedMessage(&vmess.Account{
-								Id: userID.String(),
-							}),
+					Receiver: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: serial.ToTypedMessage(&vmess.Account{
+										Id: userID.String(),
+									}),
+								},
+							},
 						},
 					},
 				}),
@@ -249,8 +255,6 @@ func TestTLSOverKCP(t *testing.T) {
 	common.Must(err)
 	defer tcpServer.Close()
 
-	ct, ctHash := cert.MustGenerate(nil, cert.CommonName("localhost"))
-
 	userID := protocol.NewID(uuid.New())
 	serverPort := udp.PickPort()
 	serverConfig := &core.Config{
@@ -264,7 +268,7 @@ func TestTLSOverKCP(t *testing.T) {
 						SecurityType: serial.GetMessageType(&tls.Config{}),
 						SecuritySettings: []*serial.TypedMessage{
 							serial.ToTypedMessage(&tls.Config{
-								Certificate: []*tls.Certificate{tls.ParseCertificate(ct)},
+								Certificate: []*tls.Certificate{tls.ParseCertificate(cert.MustGenerate(nil))},
 							}),
 						},
 					},
@@ -305,13 +309,17 @@ func TestTLSOverKCP(t *testing.T) {
 		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
-					Receiver: &protocol.ServerEndpoint{
-						Address: net.NewIPOrDomain(net.LocalHostIP),
-						Port:    uint32(serverPort),
-						User: &protocol.User{
-							Account: serial.ToTypedMessage(&vmess.Account{
-								Id: userID.String(),
-							}),
+					Receiver: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: serial.ToTypedMessage(&vmess.Account{
+										Id: userID.String(),
+									}),
+								},
+							},
 						},
 					},
 				}),
@@ -321,7 +329,7 @@ func TestTLSOverKCP(t *testing.T) {
 						SecurityType: serial.GetMessageType(&tls.Config{}),
 						SecuritySettings: []*serial.TypedMessage{
 							serial.ToTypedMessage(&tls.Config{
-								PinnedPeerCertSha256: [][]byte{ctHash[:]},
+								AllowInsecure: true,
 							}),
 						},
 					},
@@ -347,8 +355,6 @@ func TestTLSOverWebSocket(t *testing.T) {
 	common.Must(err)
 	defer tcpServer.Close()
 
-	ct, ctHash := cert.MustGenerate(nil, cert.CommonName("localhost"))
-
 	userID := protocol.NewID(uuid.New())
 	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
@@ -362,7 +368,7 @@ func TestTLSOverWebSocket(t *testing.T) {
 						SecurityType: serial.GetMessageType(&tls.Config{}),
 						SecuritySettings: []*serial.TypedMessage{
 							serial.ToTypedMessage(&tls.Config{
-								Certificate: []*tls.Certificate{tls.ParseCertificate(ct)},
+								Certificate: []*tls.Certificate{tls.ParseCertificate(cert.MustGenerate(nil))},
 							}),
 						},
 					},
@@ -403,13 +409,17 @@ func TestTLSOverWebSocket(t *testing.T) {
 		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
-					Receiver: &protocol.ServerEndpoint{
-						Address: net.NewIPOrDomain(net.LocalHostIP),
-						Port:    uint32(serverPort),
-						User: &protocol.User{
-							Account: serial.ToTypedMessage(&vmess.Account{
-								Id: userID.String(),
-							}),
+					Receiver: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: serial.ToTypedMessage(&vmess.Account{
+										Id: userID.String(),
+									}),
+								},
+							},
 						},
 					},
 				}),
@@ -425,7 +435,7 @@ func TestTLSOverWebSocket(t *testing.T) {
 						SecurityType: serial.GetMessageType(&tls.Config{}),
 						SecuritySettings: []*serial.TypedMessage{
 							serial.ToTypedMessage(&tls.Config{
-								PinnedPeerCertSha256: [][]byte{ctHash[:]},
+								AllowInsecure: true,
 							}),
 						},
 					},
@@ -455,8 +465,6 @@ func TestGRPC(t *testing.T) {
 	common.Must(err)
 	defer tcpServer.Close()
 
-	ct, ctHash := cert.MustGenerate(nil, cert.CommonName("localhost"))
-
 	userID := protocol.NewID(uuid.New())
 	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
@@ -476,7 +484,7 @@ func TestGRPC(t *testing.T) {
 						SecurityType: serial.GetMessageType(&tls.Config{}),
 						SecuritySettings: []*serial.TypedMessage{
 							serial.ToTypedMessage(&tls.Config{
-								Certificate: []*tls.Certificate{tls.ParseCertificate(ct)},
+								Certificate: []*tls.Certificate{tls.ParseCertificate(cert.MustGenerate(nil))},
 							}),
 						},
 					},
@@ -517,13 +525,17 @@ func TestGRPC(t *testing.T) {
 		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
-					Receiver: &protocol.ServerEndpoint{
-						Address: net.NewIPOrDomain(net.LocalHostIP),
-						Port:    uint32(serverPort),
-						User: &protocol.User{
-							Account: serial.ToTypedMessage(&vmess.Account{
-								Id: userID.String(),
-							}),
+					Receiver: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: serial.ToTypedMessage(&vmess.Account{
+										Id: userID.String(),
+									}),
+								},
+							},
 						},
 					},
 				}),
@@ -539,7 +551,7 @@ func TestGRPC(t *testing.T) {
 						SecurityType: serial.GetMessageType(&tls.Config{}),
 						SecuritySettings: []*serial.TypedMessage{
 							serial.ToTypedMessage(&tls.Config{
-								PinnedPeerCertSha256: [][]byte{ctHash[:]},
+								AllowInsecure: true,
 							}),
 						},
 					},
@@ -569,8 +581,6 @@ func TestGRPCMultiMode(t *testing.T) {
 	common.Must(err)
 	defer tcpServer.Close()
 
-	ct, ctHash := cert.MustGenerate(nil, cert.CommonName("localhost"))
-
 	userID := protocol.NewID(uuid.New())
 	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
@@ -590,7 +600,7 @@ func TestGRPCMultiMode(t *testing.T) {
 						SecurityType: serial.GetMessageType(&tls.Config{}),
 						SecuritySettings: []*serial.TypedMessage{
 							serial.ToTypedMessage(&tls.Config{
-								Certificate: []*tls.Certificate{tls.ParseCertificate(ct)},
+								Certificate: []*tls.Certificate{tls.ParseCertificate(cert.MustGenerate(nil))},
 							}),
 						},
 					},
@@ -631,13 +641,17 @@ func TestGRPCMultiMode(t *testing.T) {
 		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
-					Receiver: &protocol.ServerEndpoint{
-						Address: net.NewIPOrDomain(net.LocalHostIP),
-						Port:    uint32(serverPort),
-						User: &protocol.User{
-							Account: serial.ToTypedMessage(&vmess.Account{
-								Id: userID.String(),
-							}),
+					Receiver: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: serial.ToTypedMessage(&vmess.Account{
+										Id: userID.String(),
+									}),
+								},
+							},
 						},
 					},
 				}),
@@ -653,7 +667,7 @@ func TestGRPCMultiMode(t *testing.T) {
 						SecurityType: serial.GetMessageType(&tls.Config{}),
 						SecuritySettings: []*serial.TypedMessage{
 							serial.ToTypedMessage(&tls.Config{
-								PinnedPeerCertSha256: [][]byte{ctHash[:]},
+								AllowInsecure: true,
 							}),
 						},
 					},
@@ -682,9 +696,9 @@ func TestSimpleTLSConnectionPinned(t *testing.T) {
 	dest, err := tcpServer.Start()
 	common.Must(err)
 	defer tcpServer.Close()
-	certificateDer, _ := cert.MustGenerate(nil)
+	certificateDer := cert.MustGenerate(nil)
 	certificate := tls.ParseCertificate(certificateDer)
-	certHash := tls.GenerateCertHash(certificateDer.Certificate)
+	certHash := tls.GenerateCertChainHash([][]byte{certificateDer.Certificate})
 	userID := protocol.NewID(uuid.New())
 	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
@@ -738,13 +752,17 @@ func TestSimpleTLSConnectionPinned(t *testing.T) {
 		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
-					Receiver: &protocol.ServerEndpoint{
-						Address: net.NewIPOrDomain(net.LocalHostIP),
-						Port:    uint32(serverPort),
-						User: &protocol.User{
-							Account: serial.ToTypedMessage(&vmess.Account{
-								Id: userID.String(),
-							}),
+					Receiver: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: serial.ToTypedMessage(&vmess.Account{
+										Id: userID.String(),
+									}),
+								},
+							},
 						},
 					},
 				}),
@@ -753,7 +771,8 @@ func TestSimpleTLSConnectionPinned(t *testing.T) {
 						SecurityType: serial.GetMessageType(&tls.Config{}),
 						SecuritySettings: []*serial.TypedMessage{
 							serial.ToTypedMessage(&tls.Config{
-								PinnedPeerCertSha256: [][]byte{certHash},
+								AllowInsecure:                    true,
+								PinnedPeerCertificateChainSha256: [][]byte{certHash},
 							}),
 						},
 					},
@@ -778,9 +797,9 @@ func TestSimpleTLSConnectionPinnedWrongCert(t *testing.T) {
 	dest, err := tcpServer.Start()
 	common.Must(err)
 	defer tcpServer.Close()
-	certificateDer, _ := cert.MustGenerate(nil)
+	certificateDer := cert.MustGenerate(nil)
 	certificate := tls.ParseCertificate(certificateDer)
-	certHash := tls.GenerateCertHash(certificateDer.Certificate)
+	certHash := tls.GenerateCertChainHash([][]byte{certificateDer.Certificate})
 	certHash[1] += 1
 	userID := protocol.NewID(uuid.New())
 	serverPort := tcp.PickPort()
@@ -835,13 +854,17 @@ func TestSimpleTLSConnectionPinnedWrongCert(t *testing.T) {
 		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
-					Receiver: &protocol.ServerEndpoint{
-						Address: net.NewIPOrDomain(net.LocalHostIP),
-						Port:    uint32(serverPort),
-						User: &protocol.User{
-							Account: serial.ToTypedMessage(&vmess.Account{
-								Id: userID.String(),
-							}),
+					Receiver: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: serial.ToTypedMessage(&vmess.Account{
+										Id: userID.String(),
+									}),
+								},
+							},
 						},
 					},
 				}),
@@ -850,7 +873,8 @@ func TestSimpleTLSConnectionPinnedWrongCert(t *testing.T) {
 						SecurityType: serial.GetMessageType(&tls.Config{}),
 						SecuritySettings: []*serial.TypedMessage{
 							serial.ToTypedMessage(&tls.Config{
-								PinnedPeerCertSha256: [][]byte{certHash},
+								AllowInsecure:                    true,
+								PinnedPeerCertificateChainSha256: [][]byte{certHash},
 							}),
 						},
 					},
@@ -875,9 +899,9 @@ func TestUTLSConnectionPinned(t *testing.T) {
 	dest, err := tcpServer.Start()
 	common.Must(err)
 	defer tcpServer.Close()
-	certificateDer, _ := cert.MustGenerate(nil)
+	certificateDer := cert.MustGenerate(nil)
 	certificate := tls.ParseCertificate(certificateDer)
-	certHash := tls.GenerateCertHash(certificateDer.Certificate)
+	certHash := tls.GenerateCertChainHash([][]byte{certificateDer.Certificate})
 	userID := protocol.NewID(uuid.New())
 	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
@@ -931,13 +955,17 @@ func TestUTLSConnectionPinned(t *testing.T) {
 		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
-					Receiver: &protocol.ServerEndpoint{
-						Address: net.NewIPOrDomain(net.LocalHostIP),
-						Port:    uint32(serverPort),
-						User: &protocol.User{
-							Account: serial.ToTypedMessage(&vmess.Account{
-								Id: userID.String(),
-							}),
+					Receiver: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: serial.ToTypedMessage(&vmess.Account{
+										Id: userID.String(),
+									}),
+								},
+							},
 						},
 					},
 				}),
@@ -946,8 +974,9 @@ func TestUTLSConnectionPinned(t *testing.T) {
 						SecurityType: serial.GetMessageType(&tls.Config{}),
 						SecuritySettings: []*serial.TypedMessage{
 							serial.ToTypedMessage(&tls.Config{
-								Fingerprint:          "random",
-								PinnedPeerCertSha256: [][]byte{certHash},
+								Fingerprint:                      "random",
+								AllowInsecure:                    true,
+								PinnedPeerCertificateChainSha256: [][]byte{certHash},
 							}),
 						},
 					},
@@ -972,9 +1001,9 @@ func TestUTLSConnectionPinnedWrongCert(t *testing.T) {
 	dest, err := tcpServer.Start()
 	common.Must(err)
 	defer tcpServer.Close()
-	certificateDer, _ := cert.MustGenerate(nil)
+	certificateDer := cert.MustGenerate(nil)
 	certificate := tls.ParseCertificate(certificateDer)
-	certHash := tls.GenerateCertHash(certificateDer.Certificate)
+	certHash := tls.GenerateCertChainHash([][]byte{certificateDer.Certificate})
 	certHash[1] += 1
 	userID := protocol.NewID(uuid.New())
 	serverPort := tcp.PickPort()
@@ -1029,13 +1058,17 @@ func TestUTLSConnectionPinnedWrongCert(t *testing.T) {
 		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
-					Receiver: &protocol.ServerEndpoint{
-						Address: net.NewIPOrDomain(net.LocalHostIP),
-						Port:    uint32(serverPort),
-						User: &protocol.User{
-							Account: serial.ToTypedMessage(&vmess.Account{
-								Id: userID.String(),
-							}),
+					Receiver: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: serial.ToTypedMessage(&vmess.Account{
+										Id: userID.String(),
+									}),
+								},
+							},
 						},
 					},
 				}),
@@ -1044,8 +1077,9 @@ func TestUTLSConnectionPinnedWrongCert(t *testing.T) {
 						SecurityType: serial.GetMessageType(&tls.Config{}),
 						SecuritySettings: []*serial.TypedMessage{
 							serial.ToTypedMessage(&tls.Config{
-								Fingerprint:          "random",
-								PinnedPeerCertSha256: [][]byte{certHash},
+								Fingerprint:                      "random",
+								AllowInsecure:                    true,
+								PinnedPeerCertificateChainSha256: [][]byte{certHash},
 							}),
 						},
 					},

@@ -4,16 +4,16 @@ import (
 	"strconv"
 	"testing"
 
-	. "github.com/xtls/xray-core/app/router"
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/platform/filesystem"
-	"github.com/xtls/xray-core/common/protocol"
-	"github.com/xtls/xray-core/common/protocol/http"
-	"github.com/xtls/xray-core/common/session"
-	"github.com/xtls/xray-core/features/routing"
-	routing_session "github.com/xtls/xray-core/features/routing/session"
+	. "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/router"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/platform/filesystem"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol/http"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/session"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/routing"
+	routing_session "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/routing/session"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -447,7 +447,7 @@ func BenchmarkMultiGeoIPMatcher(b *testing.B) {
 		})
 	}
 
-	matcher, err := NewIPMatcher(geoips, MatcherAsType_Target)
+	matcher, err := NewMultiGeoIPMatcher(geoips, "target")
 	common.Must(err)
 
 	ctx := withOutbound(&session.Outbound{Target: net.TCPDestination(net.ParseAddress("8.8.8.8"), 80)})

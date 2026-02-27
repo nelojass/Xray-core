@@ -4,14 +4,14 @@ import (
 	"context"
 	"sync"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/serial"
-	"github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/features/dns"
-	"github.com/xtls/xray-core/features/outbound"
-	"github.com/xtls/xray-core/features/routing"
-	routing_dns "github.com/xtls/xray-core/features/routing/dns"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/serial"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/dns"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/outbound"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/routing"
+	routing_dns "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/routing/dns"
 )
 
 // Router is an implementation of routing.Router.
@@ -182,18 +182,18 @@ func (r *Router) RemoveRule(tag string) error {
 
 }
 
-// ListRule implements routing.Router
-func (r *Router) ListRule() []routing.Route {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	ruleList := make([]routing.Route, 0)
-	for _, rule := range r.rules {
-		ruleList = append(ruleList, &Route{
-			outboundTag: rule.Tag,
-			ruleTag:     rule.RuleTag,
-		})
+// TODO: filter tag
+func filterTag(tags []string, intag string) bool {
+	if len(tags) == 0 {
+		return false
 	}
-	return ruleList
+	for _, tag := range tags {
+		if intag == tag {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (r *Router) pickRouteInternal(ctx routing.Context) (*Rule, routing.Context, error) {
@@ -206,7 +206,12 @@ func (r *Router) pickRouteInternal(ctx routing.Context) (*Rule, routing.Context,
 		ctx = routing_dns.ContextWithDNSClient(ctx, r.dns)
 	}
 
+	tags := ctx.GetFilterRuleTags()
 	for _, rule := range r.rules {
+		// TODO: filter tag
+		if filterTag(tags, rule.RuleTag) {
+			continue
+		}
 		if rule.Apply(ctx) {
 			return rule, ctx, nil
 		}

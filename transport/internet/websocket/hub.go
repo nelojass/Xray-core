@@ -12,19 +12,18 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/net"
-	http_proto "github.com/xtls/xray-core/common/protocol/http"
-	"github.com/xtls/xray-core/transport/internet"
-	v2tls "github.com/xtls/xray-core/transport/internet/tls"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	http_proto "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol/http"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet"
+	v2tls "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/internet/tls"
 )
 
 type requestHandler struct {
-	host           string
-	path           string
-	ln             *Listener
-	socketSettings *internet.SocketConfig
+	host string
+	path string
+	ln   *Listener
 }
 
 var replacer = strings.NewReplacer("+", "-", "/", "_", "=", "")
@@ -65,17 +64,7 @@ func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Req
 		return
 	}
 
-	var forwardedAddrs []net.Address
-	if h.socketSettings != nil && len(h.socketSettings.TrustedXForwardedFor) > 0 {
-		for _, key := range h.socketSettings.TrustedXForwardedFor {
-			if len(request.Header.Values(key)) > 0 {
-				forwardedAddrs = http_proto.ParseXForwardedFor(request.Header)
-				break
-			}
-		}
-	} else {
-		forwardedAddrs = http_proto.ParseXForwardedFor(request.Header)
-	}
+	forwardedAddrs := http_proto.ParseXForwardedFor(request.Header)
 	remoteAddr := conn.RemoteAddr()
 	if len(forwardedAddrs) > 0 && forwardedAddrs[0].Family().IsIP() {
 		remoteAddr = &net.TCPAddr{
@@ -143,10 +132,9 @@ func ListenWS(ctx context.Context, address net.Address, port net.Port, streamSet
 
 	l.server = http.Server{
 		Handler: &requestHandler{
-			host:           wsSettings.Host,
-			path:           wsSettings.GetNormalizedPath(),
-			ln:             l,
-			socketSettings: streamSettings.SocketSettings,
+			host: wsSettings.Host,
+			path: wsSettings.GetNormalizedPath(),
+			ln:   l,
 		},
 		ReadHeaderTimeout: time.Second * 4,
 		MaxHeaderBytes:    8192,

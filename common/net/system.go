@@ -12,8 +12,6 @@ var (
 
 type ListenConfig = net.ListenConfig
 
-type KeepAliveConfig = net.KeepAliveConfig
-
 var (
 	Listen     = net.Listen
 	ListenTCP  = net.ListenTCP
@@ -27,12 +25,6 @@ var FileConn = net.FileConn
 
 // ParseIP is an alias of net.ParseIP
 var ParseIP = net.ParseIP
-
-var ParseCIDR = net.ParseCIDR
-
-var ResolveIPAddr = net.ResolveIPAddr
-
-var InterfaceByName = net.InterfaceByName
 
 var SplitHostPort = net.SplitHostPort
 
@@ -58,8 +50,6 @@ type (
 	UnixAddr = net.UnixAddr
 	UnixConn = net.UnixConn
 )
-
-type IPAddr = net.IPAddr
 
 // IP is an alias for net.IP.
 type (
@@ -92,11 +82,3 @@ var (
 )
 
 type Resolver = net.Resolver
-
-var DefaultResolver = net.DefaultResolver
-
-var JoinHostPort = net.JoinHostPort
-
-var InterfaceAddrs = net.InterfaceAddrs
-
-var Interfaces = net.Interfaces

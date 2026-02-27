@@ -7,22 +7,22 @@ import (
 	"net/netip"
 	"strings"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/log"
-	"golang.zx2c4.com/wireguard/device"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/log"
+	"v12w.x34y.com/flyfishLib/forkHub/golang.zx2c4.com/wireguard/device"
 )
 
 var wgLogger = &device.Logger{
 	Verbosef: func(format string, args ...any) {
 		log.Record(&log.GeneralMessage{
-			Severity: log.Severity_Debug,
-			Content:  fmt.Sprintf(format, args...),
+			Severity:	log.Severity_Debug,
+			Content:	fmt.Sprintf(format, args...),
 		})
 	},
 	Errorf: func(format string, args ...any) {
 		log.Record(&log.GeneralMessage{
-			Severity: log.Severity_Error,
-			Content:  fmt.Sprintf(format, args...),
+			Severity:	log.Severity_Error,
+			Content:	fmt.Sprintf(format, args...),
 		})
 	},
 }

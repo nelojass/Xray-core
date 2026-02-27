@@ -7,12 +7,12 @@ import (
 	"encoding/binary"
 	"io"
 
-	"github.com/apernet/quic-go/quicvarint"
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/buf"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/protocol"
-	ptls "github.com/xtls/xray-core/common/protocol/tls"
+	"v12w.x34y.com/flyfishLib/forkHub/quic-go/quic-go/quicvarint"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/buf"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol"
+	ptls "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol/tls"
 	"golang.org/x/crypto/hkdf"
 )
 

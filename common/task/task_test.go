@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/xtls/xray-core/common"
-	. "github.com/xtls/xray-core/common/task"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	. "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/task"
 )
 
 func TestExecuteParallel(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"testing"
 	_ "unsafe"
 
-	. "github.com/xtls/xray-core/core"
+	. "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
 )
 
 func TestFromContextPanic(t *testing.T) {

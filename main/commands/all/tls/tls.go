@@ -1,7 +1,7 @@
 package tls
 
 import (
-	"github.com/xtls/xray-core/main/commands/base"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/main/commands/base"
 )
 
 // CmdTLS holds all tls sub commands
@@ -13,7 +13,7 @@ var CmdTLS = &base.Command{
 	Commands: []*base.Command{
 		cmdCert,
 		cmdPing,
-		cmdHash,
+		cmdCertChainHash,
 		cmdECH,
 	},
 }

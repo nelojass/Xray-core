@@ -3,26 +3,27 @@ package dispatcher
 import (
 	"context"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/buf"
-	"github.com/xtls/xray-core/common/errors"
-	"github.com/xtls/xray-core/common/log"
-	"github.com/xtls/xray-core/common/net"
-	"github.com/xtls/xray-core/common/protocol"
-	"github.com/xtls/xray-core/common/session"
-	"github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/features/dns"
-	"github.com/xtls/xray-core/features/outbound"
-	"github.com/xtls/xray-core/features/policy"
-	"github.com/xtls/xray-core/features/routing"
-	routing_session "github.com/xtls/xray-core/features/routing/session"
-	"github.com/xtls/xray-core/features/stats"
-	"github.com/xtls/xray-core/transport"
-	"github.com/xtls/xray-core/transport/pipe"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/buf"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/errors"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/log"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/protocol"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/session"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/dns"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/outbound"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/policy"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/routing"
+	routing_session "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/routing/session"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/stats"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/transport/pipe"
 )
 
 var errSniffingTimeout = errors.New("timeout on sniffing")
@@ -196,7 +197,7 @@ func (d *DefaultDispatcher) getLink(ctx context.Context) (*transport.Link, *tran
 	return inboundLink, outboundLink
 }
 
-func WrapLink(ctx context.Context, policyManager policy.Manager, statsManager stats.Manager, link *transport.Link) *transport.Link {
+func (d *DefaultDispatcher) WrapLink(ctx context.Context, link *transport.Link) *transport.Link {
 	sessionInbound := session.InboundFromContext(ctx)
 	var user *protocol.MemoryUser
 	if sessionInbound != nil {
@@ -206,16 +207,24 @@ func WrapLink(ctx context.Context, policyManager policy.Manager, statsManager st
 	link.Reader = &buf.TimeoutWrapperReader{Reader: link.Reader}
 
 	if user != nil && len(user.Email) > 0 {
-		p := policyManager.ForLevel(user.Level)
+		p := d.policy.ForLevel(user.Level)
 		if p.Stats.UserUplink {
 			name := "user>>>" + user.Email + ">>>traffic>>>uplink"
-			if c, _ := stats.GetOrRegisterCounter(statsManager, name); c != nil {
+			if c, _ := stats.GetOrRegisterCounter(d.stats, name); c != nil {
 				link.Reader.(*buf.TimeoutWrapperReader).Counter = c
+			}
+			//todo: add vless up link traffic counter.
+			clientId := session.ClientIdFromContext(ctx)
+			if clientId > 0 {
+				localName := "user>>>" + strconv.FormatUint(clientId, 10) + ">>>traffic>>>uplink"
+				if c, _ := stats.GetOrRegisterCounter(d.stats, localName); c != nil {
+					link.Reader.(*buf.TimeoutWrapperReader).Counter = c
+				}
 			}
 		}
 		if p.Stats.UserDownlink {
 			name := "user>>>" + user.Email + ">>>traffic>>>downlink"
-			if c, _ := stats.GetOrRegisterCounter(statsManager, name); c != nil {
+			if c, _ := stats.GetOrRegisterCounter(d.stats, name); c != nil {
 				link.Writer = &SizeStatWriter{
 					Counter: c,
 					Writer:  link.Writer,
@@ -224,7 +233,7 @@ func WrapLink(ctx context.Context, policyManager policy.Manager, statsManager st
 		}
 		if p.Stats.UserOnline {
 			name := "user>>>" + user.Email + ">>>online"
-			if om, _ := stats.GetOrRegisterOnlineMap(statsManager, name); om != nil {
+			if om, _ := stats.GetOrRegisterOnlineMap(d.stats, name); om != nil {
 				sessionInbounds := session.InboundFromContext(ctx)
 				userIP := sessionInbounds.Source.Address.String()
 				om.AddIP(userIP)
@@ -357,7 +366,7 @@ func (d *DefaultDispatcher) DispatchLink(ctx context.Context, destination net.De
 		content = new(session.Content)
 		ctx = session.ContextWithContent(ctx, content)
 	}
-	outbound = WrapLink(ctx, d.policy, d.stats, outbound)
+	outbound = d.WrapLink(ctx, outbound)
 	sniffingRequest := content.SniffingRequest
 	if !sniffingRequest.Enabled {
 		d.routedDispatch(ctx, outbound, destination)
@@ -449,7 +458,6 @@ func sniffer(ctx context.Context, cReader *cachedReader, metadataOnly bool, netw
 	}
 	return contentResult, contentErr
 }
-
 func (d *DefaultDispatcher) routedDispatch(ctx context.Context, link *transport.Link, destination net.Destination) {
 	outbounds := session.OutboundsFromContext(ctx)
 	ob := outbounds[len(outbounds)-1]
@@ -483,10 +491,9 @@ func (d *DefaultDispatcher) routedDispatch(ctx context.Context, link *transport.
 				}
 				handler = h
 			} else {
-				errors.LogWarning(ctx, "non existing outTag: ", outTag)
 				common.Close(link.Writer)
 				common.Interrupt(link.Reader)
-				return // DO NOT CHANGE: the traffic shouldn't be processed by default outbound if the specified outbound tag doesn't exist (yet), e.g., VLESS Reverse Proxy
+				errors.LogWarning(ctx, "non existing outTag: ", outTag)
 			}
 		} else {
 			errors.LogInfo(ctx, "default route for ", destination)

@@ -1,6 +1,6 @@
 package task
 
-import "github.com/xtls/xray-core/common"
+import "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
 
 // Close returns a func() that closes v.
 func Close(v interface{}) func() error {

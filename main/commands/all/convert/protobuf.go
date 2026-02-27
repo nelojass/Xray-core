@@ -3,11 +3,12 @@ package convert
 import (
 	"fmt"
 	"os"
+	"strings"
 
-	"github.com/xtls/xray-core/common/cmdarg"
-	creflect "github.com/xtls/xray-core/common/reflect"
-	"github.com/xtls/xray-core/core"
-	"github.com/xtls/xray-core/main/commands/base"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/cmdarg"
+	creflect "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/reflect"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/core"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/main/commands/base"
 
 	"google.golang.org/protobuf/proto"
 )
@@ -60,7 +61,7 @@ func executeConvertConfigsToProtobuf(cmd *base.Command, args []string) {
 	}
 
 	if len(optFile) > 0 {
-		switch core.GetFormat(optFile){
+		switch core.GetFormatByExtension(getFileExtension(optFile)) {
 		case "protobuf", "":
 			fmt.Println("Output ProtoBuf file is ", optFile)
 		default:
@@ -104,4 +105,12 @@ func executeConvertConfigsToProtobuf(cmd *base.Command, args []string) {
 			base.Fatalf("failed to write proto file: %s", err)
 		}
 	}
+}
+
+func getFileExtension(filename string) string {
+	idx := strings.LastIndexByte(filename, '.')
+	if idx == -1 {
+		return ""
+	}
+	return filename[idx+1:]
 }

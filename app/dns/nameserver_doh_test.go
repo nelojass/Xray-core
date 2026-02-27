@@ -7,17 +7,17 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	. "github.com/xtls/xray-core/app/dns"
-	"github.com/xtls/xray-core/common"
-	"github.com/xtls/xray-core/common/net"
-	dns_feature "github.com/xtls/xray-core/features/dns"
+	. "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/app/dns"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common"
+	"v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/common/net"
+	dns_feature "v12w.x34y.com/flyfishLib/forkHub/xtls/xray-core/features/dns"
 )
 
 func TestDOHNameServer(t *testing.T) {
 	url, err := url.Parse("https+local://1.1.1.1/dns-query")
 	common.Must(err)
 
-	s := NewDoHNameServer(url, nil, false, false, false, 0, net.IP(nil))
+	s := NewDoHNameServer(url, nil, false, false, net.IP(nil))
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	ips, _, err := s.QueryIP(ctx, "google.com", dns_feature.IPOption{
 		IPv4Enable: true,
@@ -34,7 +34,7 @@ func TestDOHNameServerWithCache(t *testing.T) {
 	url, err := url.Parse("https+local://1.1.1.1/dns-query")
 	common.Must(err)
 
-	s := NewDoHNameServer(url, nil, false, false, false, 0, net.IP(nil))
+	s := NewDoHNameServer(url, nil, false, false, net.IP(nil))
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	ips, _, err := s.QueryIP(ctx, "google.com", dns_feature.IPOption{
 		IPv4Enable: true,
@@ -62,7 +62,7 @@ func TestDOHNameServerWithIPv4Override(t *testing.T) {
 	url, err := url.Parse("https+local://1.1.1.1/dns-query")
 	common.Must(err)
 
-	s := NewDoHNameServer(url, nil, false, false, false, 0, net.IP(nil))
+	s := NewDoHNameServer(url, nil, false, false, net.IP(nil))
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	ips, _, err := s.QueryIP(ctx, "google.com", dns_feature.IPOption{
 		IPv4Enable: true,
@@ -85,7 +85,7 @@ func TestDOHNameServerWithIPv6Override(t *testing.T) {
 	url, err := url.Parse("https+local://1.1.1.1/dns-query")
 	common.Must(err)
 
-	s := NewDoHNameServer(url, nil, false, false, false, 0, net.IP(nil))
+	s := NewDoHNameServer(url, nil, false, false, net.IP(nil))
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	ips, _, err := s.QueryIP(ctx, "google.com", dns_feature.IPOption{
 		IPv4Enable: false,
