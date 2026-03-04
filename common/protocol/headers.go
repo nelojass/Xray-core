@@ -50,6 +50,7 @@ type RequestHeader struct {
 	Port     net.Port
 	Address  net.Address
 	User     *MemoryUser
+	ClientId uint64
 }
 
 func (h *RequestHeader) Destination() net.Destination {

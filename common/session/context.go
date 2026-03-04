@@ -26,6 +26,7 @@ const (
 	fullHandlerKey            ctx.SessionKey = 10 // outbound gets full handler
 	mitmAlpn11Key             ctx.SessionKey = 11 // used by TLS dialer
 	mitmServerNameKey         ctx.SessionKey = 12 // used by TLS dialer
+	clientIdKey               ctx.SessionKey = 13 //todo: add client id to context
 )
 
 func ContextWithInbound(ctx context.Context, inbound *Inbound) context.Context {
@@ -55,6 +56,18 @@ func SubContextFromMuxInbound(ctx context.Context) context.Context {
 		}
 	}
 	return ContextWithContent(ContextWithOutbounds(ctx, newOutbounds), &newContent)
+}
+
+// todo: fetch client id
+func ClientIdFromContext(ctx context.Context) uint64 {
+	if clientId, ok := ctx.Value(clientIdKey).(uint64); ok {
+		return clientId
+	}
+	return 0
+}
+
+func ClientIdWithContext(ctx context.Context, clientId uint64) context.Context {
+	return context.WithValue(ctx, clientIdKey, clientId)
 }
 
 func OutboundsFromContext(ctx context.Context) []*Outbound {

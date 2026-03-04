@@ -3,6 +3,7 @@ package dispatcher
 import (
 	"context"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -219,6 +220,14 @@ func WrapLink(ctx context.Context, policyManager policy.Manager, statsManager st
 				link.Writer = &SizeStatWriter{
 					Counter: c,
 					Writer:  link.Writer,
+				}
+				//todo: add vless up link traffic counter.
+				clientId := session.ClientIdFromContext(ctx)
+				if clientId > 0 {
+					localName := "user>>>" + strconv.FormatUint(clientId, 10) + ">>>traffic>>>uplink"
+					if c, _ := stats.GetOrRegisterCounter(statsManager, localName); c != nil {
+						link.Reader.(*buf.TimeoutWrapperReader).Counter = c
+					}
 				}
 			}
 		}

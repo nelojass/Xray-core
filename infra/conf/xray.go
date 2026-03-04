@@ -52,6 +52,9 @@ var (
 		"dns":         func() interface{} { return new(DNSOutboundConfig) },
 		"wireguard":   func() interface{} { return &WireGuardConfig{IsClient: true} },
 	}, "protocol", "settings")
+
+	//todo: 侵入
+	OutboundConfigLoader = outboundConfigLoader
 )
 
 type SniffingConfig struct {

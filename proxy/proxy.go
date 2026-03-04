@@ -744,7 +744,28 @@ func CopyRawConnIfExist(ctx context.Context, readerConn net.Conn, writerConn net
 			if inTimer != nil {
 				inTimer.SetTimeout(24 * time.Hour)
 			}
-			w, err := tc.ReadFrom(readerConn)
+			// todo: fix 修复xcore协议因为零拷贝流量统计延误的问题
+			for {
+				limitReader := &io.LimitedReader{R: readerConn, N: 1 << 20}
+				w, err := tc.ReadFrom(limitReader)
+				if readCounter != nil {
+					readCounter.Add(w) // outbound stats
+				}
+				if writeCounter != nil {
+					writeCounter.Add(w) // inbound stats
+				}
+				if statWriter != nil {
+					statWriter.Counter.Add(w) // user stats
+				}
+				if err != nil && errors.Cause(err) != io.EOF {
+					return err
+				}
+				// 底层reader返回eof表示读完
+				if errors.Cause(err) == io.EOF && limitReader.N > 0 {
+					break
+				}
+			}
+			/*w, err := tc.ReadFrom(readerConn)
 			if readCounter != nil {
 				readCounter.Add(w) // outbound stats
 			}
@@ -756,7 +777,7 @@ func CopyRawConnIfExist(ctx context.Context, readerConn net.Conn, writerConn net
 			}
 			if err != nil && errors.Cause(err) != io.EOF {
 				return err
-			}
+			}*/
 			return nil
 		}
 		buffer, err := reader.ReadMultiBuffer()

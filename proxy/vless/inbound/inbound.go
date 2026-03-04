@@ -604,6 +604,8 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection s
 	} else if account.Flow == vless.XRV {
 		ctx = session.ContextWithAllowedNetwork(ctx, net.Network_UDP)
 	}
+	//todo:outbound协议可以获取到clientID
+	ctx = session.ClientIdWithContext(ctx, request.ClientId)
 
 	trafficState := proxy.NewTrafficState(userSentID)
 	clientReader := encoding.DecodeBodyAddons(reader, request, requestAddons)

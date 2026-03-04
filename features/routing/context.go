@@ -49,4 +49,7 @@ type Context interface {
 
 	// GetSkipDNSResolve returns a flag switch for weather skip dns resolve during route pick.
 	GetSkipDNSResolve() bool
+
+	// GetFilterRuleTags //todo: edit for x to filter rule tags
+	GetFilterRuleTags() []string
 }

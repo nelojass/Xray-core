@@ -2,6 +2,7 @@ package encoding
 
 import (
 	"context"
+	"encoding/binary"
 	"io"
 
 	"github.com/xtls/xray-core/common/buf"
@@ -37,6 +38,13 @@ func EncodeRequestHeader(writer io.Writer, request *protocol.RequestHeader, requ
 
 	if _, err := buffer.Write(request.User.Account.(*vless.MemoryAccount).ID.Bytes()); err != nil {
 		return errors.New("failed to write request user id").Base(err)
+	}
+
+	//todo： add client id
+	idBuf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(idBuf, request.ClientId)
+	if _, err := buffer.Write(idBuf); err != nil {
+		return errors.New("failed to write request client id").Base(err)
 	}
 
 	if err := EncodeHeaderAddons(&buffer, requestAddons); err != nil {
@@ -96,8 +104,22 @@ func DecodeRequestHeader(isfb bool, first *buf.Buffer, reader io.Reader, validat
 			return nil, nil, nil, isfb, errors.New("invalid request user id: " + u.String())
 		}
 
+		//todo: decode request client id
+		// var clientId = make([]byte, 8)
+		// if isfb {
+		// 	copy(clientId[:], first.BytesRange(17, 25))
+		// } else {
+		// 	buffer.Clear()
+		// 	if _, err := buffer.ReadFullFrom(reader, 8); err != nil {
+		// 		return nil, nil, nil, false, errors.New("failed to read request client id").Base(err)
+		// 	}
+		// 	copy(clientId[:], buffer.Bytes())
+		// }
+		// request.ClientId = binary.LittleEndian.Uint64(clientId)
+
 		if isfb {
-			first.Advance(17)
+			//todo: advance the client id part
+			first.Advance(17 + 8)
 		}
 
 		requestAddons, err := DecodeHeaderAddons(&buffer, reader)

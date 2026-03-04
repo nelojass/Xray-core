@@ -196,6 +196,20 @@ func (r *Router) ListRule() []routing.Route {
 	return ruleList
 }
 
+// todo: filter tag
+func filterTag(tags []string, intag string) bool {
+	if len(tags) == 0 {
+		return false
+	}
+	for _, tag := range tags {
+		if intag == tag {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (r *Router) pickRouteInternal(ctx routing.Context) (*Rule, routing.Context, error) {
 	// SkipDNSResolve is set from DNS module.
 	// the DOH remote server maybe a domain name,
@@ -204,6 +218,17 @@ func (r *Router) pickRouteInternal(ctx routing.Context) (*Rule, routing.Context,
 
 	if r.domainStrategy == Config_IpOnDemand && !skipDNSResolve {
 		ctx = routing_dns.ContextWithDNSClient(ctx, r.dns)
+	}
+
+	tags := ctx.GetFilterRuleTags()
+	for _, rule := range r.rules {
+		// todo: filter tag
+		if filterTag(tags, rule.RuleTag) {
+			continue
+		}
+		if rule.Apply(ctx) {
+			return rule, ctx, nil
+		}
 	}
 
 	for _, rule := range r.rules {

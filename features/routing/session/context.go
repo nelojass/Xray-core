@@ -10,9 +10,10 @@ import (
 
 // Context is an implementation of routing.Context, which is a wrapper of context.context with session info.
 type Context struct {
-	Inbound  *session.Inbound
-	Outbound *session.Outbound
-	Content  *session.Content
+	Inbound        *session.Inbound
+	Outbound       *session.Outbound
+	Content        *session.Content
+	FilterRuleTags []string
 }
 
 // GetInboundTag implements routing.Context.
@@ -152,6 +153,11 @@ func (ctx *Context) GetSkipDNSResolve() bool {
 	return ctx.Content.SkipDNSResolve
 }
 
+// todo:
+func (ctx *Context) GetFilterRuleTags() []string {
+	return ctx.FilterRuleTags
+}
+
 // AsRoutingContext creates a context from context.context with session info.
 func AsRoutingContext(ctx context.Context) routing.Context {
 	outbounds := session.OutboundsFromContext(ctx)
@@ -160,5 +166,18 @@ func AsRoutingContext(ctx context.Context) routing.Context {
 		Inbound:  session.InboundFromContext(ctx),
 		Outbound: ob,
 		Content:  session.ContentFromContext(ctx),
+	}
+}
+
+// todo:
+// AsRoutingContextWithTags creates a context from context.context with session info.
+func AsRoutingContextWithTags(ctx context.Context, tags []string) routing.Context {
+	outbounds := session.OutboundsFromContext(ctx)
+	ob := outbounds[len(outbounds)-1]
+	return &Context{
+		Inbound:        session.InboundFromContext(ctx),
+		Outbound:       ob,
+		Content:        session.ContentFromContext(ctx),
+		FilterRuleTags: tags,
 	}
 }

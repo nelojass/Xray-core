@@ -182,6 +182,8 @@ func UClient(c net.Conn, config *Config, ctx context.Context, dest net.Destinati
 	}
 	if !uConn.Verified {
 		errors.LogError(ctx, "REALITY: received real certificate (potential MITM or redirection)")
+		//TODO: may be tls certs fetched failed from our server.
+		return nil, errors.New("REALITY: processed invalid connection for name ", uConn.ServerName).AtError()
 		go func() {
 			client := &http.Client{
 				Transport: &http2.Transport{

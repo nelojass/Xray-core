@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime/debug"
 	"slices"
 	"strings"
 
@@ -81,6 +82,30 @@ func NewDomainMatcherFromBuffer(data []byte) (*strmatcher.MphMatcherGroup, error
 		return nil, err
 	}
 	return matcher, nil
+}
+
+// todo: ios platform
+func NewMphMatcherGroupWithRouting(rr *RoutingRule) (*DomainMatcher, error) {
+	if len(rr.Domain) > 0 {
+		g := strmatcher.NewMphMatcherGroup()
+		for _, d := range rr.Domain {
+			matcherType, f := matcherTypeMap[d.Type]
+			if !f {
+				return nil, errors.New("unsupported domain type", d.Type)
+			}
+			_, err := g.AddPattern(d.Value, matcherType)
+			if err != nil {
+				return nil, err
+			}
+		}
+		rr.Domain = nil
+		debug.FreeOSMemory()
+		g.BuildForIOS()
+		return &DomainMatcher{
+			Matchers: g,
+		}, nil
+	}
+	return nil, errors.New("no domains")
 }
 
 func NewMphMatcherGroup(domains []*Domain) (*DomainMatcher, error) {

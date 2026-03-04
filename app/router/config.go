@@ -120,7 +120,13 @@ func (rr *RoutingRule) BuildCondition() (Condition, error) {
 			errors.LogDebug(context.Background(), "MphDomainMatcher loaded from cache for ", rr.RuleTag, " rule tag)")
 
 		} else {
-			matcher, err = NewMphMatcherGroup(rr.Domain)
+			//todo: optimzation for ios platform to load dat file, to save memory.
+			if runtime.GOOS == "ios" {
+				matcher, err = NewMphMatcherGroupWithRouting(rr)
+			} else {
+				matcher, err = NewMphMatcherGroup(rr.Domain)
+			}
+			//matcher, err = NewMphMatcherGroup(rr.Domain)
 			if err != nil {
 				return nil, errors.New("failed to build domain condition with MphDomainMatcher").Base(err)
 			}

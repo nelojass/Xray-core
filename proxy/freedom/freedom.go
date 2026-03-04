@@ -4,9 +4,11 @@ import (
 	"context"
 	"crypto/rand"
 	"io"
+	"strconv"
 	"time"
 
 	"github.com/pires/go-proxyproto"
+	"github.com/xtls/xray-core/app/dispatcher"
 	"github.com/xtls/xray-core/common"
 	"github.com/xtls/xray-core/common/buf"
 	"github.com/xtls/xray-core/common/crypto"
@@ -33,8 +35,8 @@ var useSplice bool
 func init() {
 	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
 		h := new(Handler)
-		if err := core.RequireFeatures(ctx, func(pm policy.Manager) error {
-			return h.Init(config.(*Config), pm)
+		if err := core.RequireFeatures(ctx, func(pm policy.Manager, sm stats.Manager) error {
+			return h.Init(config.(*Config), pm, sm)
 		}); err != nil {
 			return nil, err
 		}
@@ -51,13 +53,17 @@ func init() {
 // Handler handles Freedom connections.
 type Handler struct {
 	policyManager policy.Manager
-	config        *Config
+	//todo: add stat manager
+	statManager stats.Manager
+	config      *Config
 }
 
 // Init initializes the Handler with necessary parameters.
-func (h *Handler) Init(config *Config, pm policy.Manager) error {
+func (h *Handler) Init(config *Config, pm policy.Manager, s stats.Manager) error {
 	h.config = config
 	h.policyManager = pm
+	//todo: add stat manager
+	h.statManager = s
 	return nil
 }
 
@@ -103,6 +109,22 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 		if server.Port != 0 {
 			destination.Port = net.Port(server.Port)
 			UDPOverride.Port = destination.Port
+		}
+	}
+
+	//todo:add freedom down link traffic counter.
+	clientId := session.ClientIdFromContext(ctx)
+	if sizeStatWriter, ok := link.Writer.(*dispatcher.SizeStatWriter); ok {
+		name := "user>>>" + strconv.FormatUint(clientId, 10) + ">>>traffic>>>downlink"
+		if c, _ := stats.GetOrRegisterCounter(h.statManager, name); c != nil {
+			sizeStatWriter.Counter = c
+		}
+	} else if buWriter, ok := link.Writer.(*buf.EndpointOverrideWriter); ok {
+		name := "user>>>" + strconv.FormatUint(clientId, 10) + ">>>traffic>>>downlink"
+		if c, _ := stats.GetOrRegisterCounter(h.statManager, name); c != nil {
+			if statWriter, ok := buWriter.Writer.(*dispatcher.SizeStatWriter); ok {
+				statWriter.Counter = c
+			}
 		}
 	}
 

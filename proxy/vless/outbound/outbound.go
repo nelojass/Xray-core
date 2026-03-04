@@ -6,12 +6,14 @@ import (
 	gotls "crypto/tls"
 	"encoding/base64"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 	"unsafe"
 
 	utls "github.com/refraction-networking/utls"
+	"github.com/xtls/xray-core/app/dispatcher"
 	proxyman "github.com/xtls/xray-core/app/proxyman/outbound"
 	"github.com/xtls/xray-core/app/reverse"
 	"github.com/xtls/xray-core/common"
@@ -29,6 +31,7 @@ import (
 	"github.com/xtls/xray-core/core"
 	"github.com/xtls/xray-core/features/policy"
 	"github.com/xtls/xray-core/features/routing"
+	"github.com/xtls/xray-core/features/stats"
 	"github.com/xtls/xray-core/proxy"
 	"github.com/xtls/xray-core/proxy/vless"
 	"github.com/xtls/xray-core/proxy/vless/encoding"
@@ -51,9 +54,11 @@ func init() {
 type Handler struct {
 	server        *protocol.ServerSpec
 	policyManager policy.Manager
-	cone          bool
-	encryption    *encryption.ClientInstance
-	reverse       *Reverse
+	//todo: add stat manager
+	statManager stats.Manager
+	cone        bool
+	encryption  *encryption.ClientInstance
+	reverse     *Reverse
 
 	testpre  uint32
 	initpre  sync.Once
@@ -79,7 +84,11 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 	handler := &Handler{
 		server:        server,
 		policyManager: v.GetFeature(policy.ManagerType()).(policy.Manager),
-		cone:          ctx.Value("cone").(bool),
+
+		//todo: add stat manager
+		statManager: v.GetFeature(stats.ManagerType()).(stats.Manager),
+
+		cone: ctx.Value("cone").(bool),
 	}
 
 	a := handler.server.User.Account.(*vless.MemoryAccount)
@@ -194,7 +203,10 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 
 	iConn := stat.TryUnwrapStatsConn(conn)
 	target := ob.Target
-	errors.LogInfo(ctx, "tunneling request to ", target, " via ", rec.Destination.NetAddr())
+
+	//todo: fetch client id
+	clientId := session.ClientIdFromContext(ctx)
+	errors.LogInfo(ctx, "tunneling request to ", target, " via ", rec.Destination.NetAddr(), " clientId:", clientId)
 
 	if h.encryption != nil {
 		var err error
@@ -216,6 +228,21 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 				return errors.New("nice try baby").AtError()
 			}
 			command = protocol.RequestCommandRvs
+		}
+	}
+
+	//todo: add vless traffic counter
+	if sizeStatWriter, ok := link.Writer.(*dispatcher.SizeStatWriter); ok {
+		name := "user>>>" + strconv.FormatUint(clientId, 10) + ">>>traffic>>>downlink"
+		if c, _ := stats.GetOrRegisterCounter(h.statManager, name); c != nil {
+			sizeStatWriter.Counter = c
+		}
+	} else if buWriter, ok := link.Writer.(*buf.EndpointOverrideWriter); ok {
+		name := "user>>>" + strconv.FormatUint(clientId, 10) + ">>>traffic>>>downlink"
+		if c, _ := stats.GetOrRegisterCounter(h.statManager, name); c != nil {
+			if statWriter, ok := buWriter.Writer.(*dispatcher.SizeStatWriter); ok {
+				statWriter.Counter = c
+			}
 		}
 	}
 
